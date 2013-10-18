@@ -45,6 +45,14 @@ class Organization(MPTTModel, BaseModel):
                                              user__is_active=1)
         
     @staticmethod
+    def get_students_by_orgtype(organization_type_label):
+        from users.models import StudentProfile
+        return StudentProfile.objects.select_related('gradelevel','user').filter(deleted=0,
+                                             user__organization__type_label=organization_type_label, 
+                                             user__organization__deleted=0,
+                                             user__groups__id=1,
+                                             user__is_active=1)
+    @staticmethod
     def get_districtadmins(organization_id):
         return User.objects.filter(organization__id=organization_id, 
                                    organization__deleted=0,
