@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Badge Completion Report by Pathway{%endblock%}
+{% block custom_head_content %}
+<script src="{{ STATIC_URL }}js/FixedColumns.min.js" type="text/javascript"></script>
+<style>
+.caret {
+margin-top:8px;
+}
+</style>
+{% endblock %}
+{% block breadcrumbs %}
+<li><span class="divider">/</span> <a href="/reports/pathways/" class='muted'>Pathway Summary Report</a></li>
+<li class='active'><span class="divider">/</span> Badge Completion Report by Pathway</li>
+{% endblock %}
+{% load custom_filters %}
+{% block content %}
+
+<div class="row-fluid">
+  <div class="span10">
+  	<h2>Badge Completion Report by Pathway</h2>
+  	<form method="get" style="display:inline;">
+  	<input type='hidden' name='pathway_id' value='0'/>
+	<span class="muted lead">School:</span> <select name='school_id' id='schoolid' onchange="submit()">
+	{% for school in school_list %}
+	<option value="{{school.id}}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+	{% endfor %}
+	</select>
+	</form>
+	&nbsp;
+	<form method="get" style="display:inline;">
+	<span class="muted lead">Pathway:</span> <select name='pathway_id' id='pathwayid' onchange="submit()">
+	{% for pathway in pathway_list %}
+	<option value="{{pathway.id}}" {% if selected_pathway_id == pathway.id %}selected{% endif %}>{{ pathway.name }}</option>
+	{% endfor %}
+	</select>
+	</form>
+  </div>
+  
+  <div class="span2" style="text-align:right;">
+  	<br/>
+  	
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/reports/pathways/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+</div>
+
+<br/>
+
+
+<table class="table table-bordered table-striped" id="reportTable" >
+<thead>
+	<tr>
+		<th width='250'>Student Name</th>
+		<th>ID</th>
+		<th style="text-align:center;" width='60'>Grade</th>
+		{% for badge in badge_list %}
+		<th style="text-align:center;">{{badge.name}}</th>
+		{% endfor %}
+		
+	</tr>
+</thead>
+<tbody>
+	{%for student in student_list %}
+	<tr>
+	<td>{{student.name}}</td>
+	<td>{{student.identifier}}</td>
+	<td style="text-align:center;">{{student.gradelevel}}</td>
+	{% for badge in badge_list %}
+	<td style="text-align:center;">
+		{% if student.award_map|lookup:badge.id %}
+		{{student.award_map|lookup:badge.id}}
+		{% endif %}
+	</td>
+	{% endfor %}
+	
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+
+<script language="JavaScript">
+
+	var oTable = $('#reportTable').dataTable({
+		"bStateSave": true,
+		"sDom": "<'row-fluid'<'span6'l><'span6'T>r>t<'row-fluid'<'span6'i><'span6'p>>",
+		
+			"oTableTools": {
+			"sSwfPath": "{{STATIC_URL}}swf/copy_csv_xls_pdf.swf",
+				"aButtons": [
+					"copy",
+					"print",
+					{
+						"sExtends":    "collection",
+						"sButtonText": 'Save <span class="caret" />',
+						"aButtons":    [ "csv", "xls", "pdf" ]
+					}
+				],
+				
+		   
+		},
+		"sScrollX": "100%",
+	    "bScrollCollapse": true
+		
+    } );
+    
+    new FixedColumns( oTable );
+    
+  
+</script>	
+	
+{% endblock %}

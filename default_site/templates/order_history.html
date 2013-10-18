@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Order History{%endblock%}
+{% block breadcrumbs %}
+<li><span class="divider">/</span> <a href="/redeem/" class='muted'>Redeem My Points</a></li>
+<li class='active'><span class="divider">/</span> Order History</li>
+{% endblock %}
+{% block content %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Order History</h2>
+  </div>
+  <div class="span6">
+  	<br/>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/redeem/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+</div>
+
+<div class="clearfix"></div>
+<br/>
+
+<div class="accordion" id="accordion2">
+{% for order in order_list %}
+  <div class="accordion-group">
+    <div class="accordion-heading">
+      <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse{{order.id}}">
+        <i class='icon icon-plus'></i> <b>Order Date:</b> {{order.date_created}} &nbsp;&nbsp;&nbsp;<span class='pull-right'><b>Items:</b> {{order.item_list|length}}</span>
+      </a>
+    </div>
+    <div id="collapse{{order.id}}" class="accordion-body {% if not forloop.first %}collapse{% endif %}">
+      <div class="accordion-inner">
+        
+        <table class="table table-condensed">
+  		{% for item in order.item_list %}
+  		<tr>
+  			<td style="font-size:0.9em;">{{item.vendor_name}}: {{item.name}}</td>
+  			<td style="text-align:center;font-size:0.9em;"><b>{{item.points}}</b></td>
+  		</tr>
+  		{% endfor %}
+  		<tr>
+  			<td class="text-info"><b>Total</b></td>
+  			<td class="text-info" style="text-align:center"><b>{{order.order_total}}</b></td>
+  		</tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+{%empty%}
+<div class="well text-error">
+  <i class="icon-warning-sign"></i> No orders found. 
+</div>
+{% endfor %}
+  
+  
+</div>
+
+
+
+	
+{% endblock %}

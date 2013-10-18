@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Manage Pathways{%endblock%}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> Manage Pathways</li>
+{% endblock %}
+{% block content %}
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Manage Pathways</h2>
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="button" onclick="javascript:document.location.href='/pathways/add/'"><i class="icon-plus icon-white"></i> Add Pathway</button>
+ 	<button class="btn btn-primary btn-large" type="button" onclick="javascript:document.location.href='/pathways/sort/'"><i class="icon-sort icon-white"></i> Sort Pathways</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+</div>
+
+<br/>
+
+<table class="table table-bordered table-striped" id="pathwaysTable">
+<thead>
+	<tr>
+		<th>Name</th>
+		<th width='150'>Category</th>
+		<th width='250'>School(s)</th>
+		<th width='100' style='text-align:center;'>Badges</th>
+		<th  style='text-align:center;' width='80'>Options</th>
+	</tr>
+</thead>
+<tbody>
+	{%for pathway in pathway_list %}
+	<tr>
+	<td>{% if pathway.badge_image_url %}<img src="{{pathway.badge_image_url}}" style="width:30px;height:30px;" />{%endif%} {{pathway.name}}</td>
+	<td>{{pathway.category}}</td>
+	<td>{{pathway.schools}}</td>
+	<td style='text-align:center;'><a href="/pathways/badges/?pathway_id={{pathway.id}}" title="Pathway Badges"><span class="badge badge-info">{{pathway.num_badges}}</span></a></td>
+	<td  style='text-align:center;'>
+		<a href="/pathways/edit/{{pathway.id}}/" title='Edit Pathway'><i class="icon-edit"></i></a>&nbsp;
+		<a href="javascript:void(0)" onclick="confirmCopy('{{pathway.id}}');" title='Copy Pathway'><i class="icon-copy"></i></a>&nbsp;
+		<a href="javascript:void(0)" onclick="confirmDelete('{{pathway.id}}');" title='Delete Pathway'><i class="icon-trash"></i></a>	
+	</td>
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+
+<div class="modal hide fade" id="deletePathwayModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Delete Pathway?</h3>
+  </div>
+  <div class="modal-body">
+    <p>Are you sure you want to delete this pathway?</p>
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Cancel</button>
+    <buton class="btn btn-primary" id="deleteButton">Delete</button>
+  </div>
+</div>
+
+<div class="modal hide fade" id="copyPathwayModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Copy Pathway?</h3>
+  </div>
+  <div class="modal-body">
+    <p>Are you sure you want to copy this pathway?</p>
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Cancel</button>
+    <buton class="btn btn-primary" id="copyButton">Copy</button>
+  </div>
+</div>
+	
+<script language="JavaScript">
+
+	$('#pathwaysTable').dataTable({
+		"bStateSave": false,
+       "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap"
+    } );
+    
+    function confirmDelete(pathway_id) {
+    	$("#deleteButton").unbind("click").click(function(){document.location.href="/pathways/delete/"+pathway_id+"/";});
+    	$('#deletePathwayModal').modal();
+    }
+    
+    function confirmCopy(pathway_id) {
+    	$("#copyButton").unbind("click").click(function(){document.location.href="/pathways/copy/"+pathway_id+"/";});
+    	$('#copyPathwayModal').modal();
+    }
+
+
+</script>	
+	
+{% endblock %}

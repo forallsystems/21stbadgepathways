@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{%endblock%}
+{% block content %}
+
+
+<h2>Dashboard</h2>
+
+<div class="row-fluid">
+  <div class="span6">
+  	<div class='menu title'>Reports</div>
+  	<a href="/reports/pathways/"><div class='menu'>Pathway Summary <i class='icon icon-chevron-right'></i></div></a>
+  	<a href="/reports/badges/"><div class='menu'>Badge Completion <i class='icon icon-chevron-right'></i></div></a>
+  	<a href="/reports/redemptions/"><div class='menu'>Point Redemptions <i class='icon icon-chevron-right'></i></div></a>
+  	
+  </div>
+  <div class="span6 alignLeft">
+    <div class='menu title'>Manage System</div>
+  	<a href="/pathways/"><div class='menu'>Pathways <i class='icon icon-chevron-right'></i></div></a>
+	<a href="/badges/"><div class='menu'>Badges <i class='icon icon-chevron-right'></i></div></a>
+	<a href="/vendors/"><div class='menu'>Vendors & Inventory <i class='icon icon-chevron-right'></i></div></a>
+	<a href="/students/"><div class='menu'>Student Accounts <i class='icon icon-chevron-right'></i></div></a>
+	<a href="/districtadmins/"><div class='menu'>District Admin Accounts <i class='icon icon-chevron-right'></i></div></a>
+  </div>
+</div>
+	
+	
+{% endblock %}

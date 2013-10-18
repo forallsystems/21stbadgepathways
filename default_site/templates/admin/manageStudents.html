@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Manage Students{%endblock%}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> Manage Students</li>
+{% endblock %}
+{% block content %}
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Manage Students</h2>
+  	
+  	<form method="get">
+	<span class="muted lead">School:</span> <select name='school_id' id='schoolid' onchange="submit()">
+	{% for school in school_list %}
+	<option value="{{school.id}}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+	{% endfor %}
+	</select>
+	</form>
+
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="button" onclick="javascript:document.location.href='/students/add/{{selected_school_id}}/'"><i class="icon-plus icon-white"></i> Add Student</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+ 
+  </div>
+</div>
+
+
+<table class="table table-bordered table-striped" id="studentsTable">
+<!--
+<thead>
+	<tr>
+		<th>Name</th>
+		<th>ID</th>
+		<th>Username</th>
+		<th>Email Address</th>
+		<th style='text-align:center;' width='100'>Awards</th>
+		<th style='text-align:center;' width='80'>Options</th>
+	</tr>
+</thead>
+<tbody>
+
+	{%for student in student_list %}
+	<tr>
+	<td>{{student.name}}</td>
+	<td>{{student.identifier}}</td>
+	<td>{{student.username}}</td>
+	<td>{{student.email}}</td>
+	<td style='text-align:center;'>
+		<a href="/students/awards/?student_id={{student.id}}">
+		<span class='badge badge-info'>{{student.num_awards}}</span>
+		</a>
+	</td>
+	<td style='text-align:center;'>
+		<a href="/students/edit/{{student.id}}/" title='Edit Student'><i class="icon-edit"></i></a>&nbsp;
+		<a href="javascript:void(0)" onclick="confirmDelete('{{student.id}}');" title='Delete Student'><i class="icon-trash"></i></a>	
+	</td>
+	</tr>
+	{% endfor %}
+	-->
+</tbody>
+</table>
+
+<div class="modal hide fade" id="deleteStudentModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Delete Student?</h3>
+  </div>
+  <div class="modal-body">
+    <p>Are you sure you want to delete this student's account?</p>
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Cancel</button>
+    <buton class="btn btn-primary" id="deleteButton">Delete</button>
+  </div>
+</div>
+	
+<script language="JavaScript">
+
+	
+
+	$('#studentsTable').dataTable({
+		"bStateSave": false,
+       "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap",
+         "aaData": [
+         	{%for student in student_list %}
+			["{{student.name}}","{{student.identifier}}","{{student.username}}","{{student.email}}","<a href='/students/awards/?student_id={{student.id}}'><span class='badge badge-info'>{{student.num_awards}}</span></a>","<a href='/students/edit/{{student.id}}/' title='Edit Student'><i class='icon-edit'></i></a>&nbsp;&nbsp;&nbsp;<a href='javascript:void(0)' onclick='confirmDelete(\'{{student.id}}\');' title='Delete Student'><i class='icon-trash'></i></a>"],
+	
+			{% endfor %}
+         
+         ],
+         "aoColumns": [
+            { "sTitle": "Name" },
+            { "sTitle": "ID" },
+            { "sTitle": "Username" },
+            { "sTitle": "Email Address" },
+            { "sTitle": "Awards", "sClass": "center" },
+            { "sTitle": "Options", "sClass": "center" }
+        ]
+    } );
+    
+    function confirmDelete(student_id) {
+    	$("#deleteButton").unbind("click").click(function(){document.location.href="/students/delete/"+student_id+"/";});
+    	$('#deleteStudentModal').modal();
+    }
+
+
+</script>	
+	
+{% endblock %}

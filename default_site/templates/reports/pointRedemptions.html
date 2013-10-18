@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Point Redemption Report{%endblock%}
+{% block custom_head_content %}
+<style>
+.caret {
+margin-top:8px;
+}
+</style>
+{% endblock %}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> Point Redemption Report</li>
+{% endblock %}
+{% block content %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Point Redemption Report</h2>
+  	<form method="get">
+	<span class="muted lead">Selected School:</span> <select name='school_id' id='schoolid' onchange="submit()">
+	{% for school in school_list %}
+	<option value="{{school.id}}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+	{% endfor %}
+	</select>
+	</form>
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+</div>
+
+
+<table class="table table-bordered table-striped" id="reportTable">
+<thead>
+	<tr>
+		<th>Item Redeemed</th>
+		<th width='170' style="text-align:center;"># of Redemptions</th>
+		<th width='170' style="text-align:center;">Total Points Spent</th>
+		
+	</tr>
+</thead>
+<tbody>
+	{%for key, value in data_set.items %}
+	<tr>
+	<td>{{value.vendor_name}}: {{value.name}} <span class='muted'>({{value.points}} points)</span></td>
+	<td style="text-align:center;">{{value.redemptions}}</td>
+	<td style="text-align:center;">{{value.totalPointsSpent}}</td>
+
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+
+	
+<script language="JavaScript">
+
+	$('#reportTable').dataTable({
+		"bStateSave": true,
+		"sDom": "<'row-fluid'<'span6'l><'span6'T>r>t<'row-fluid'<'span6'i><'span6'p>>",
+		
+			"oTableTools": {
+			"sSwfPath": "{{STATIC_URL}}swf/copy_csv_xls_pdf.swf",
+				"aButtons": [
+					"copy",
+					"print",
+					{
+						"sExtends":    "collection",
+						"sButtonText": 'Save <span class="caret" />',
+						"aButtons":    [ "csv", "xls", "pdf" ]
+					}
+				]
+		}
+		
+    } );
+    
+  
+</script>	
+	
+{% endblock %}

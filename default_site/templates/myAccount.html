@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}My Account{%endblock%}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> My Account</li>
+{% endblock %}
+{% block content %}
+<form action="" method="post" class="form-horizontal">
+{% csrf_token %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>My Account</h2>
+  </div>
+  <div class="span6" >
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="submit" ><i class="icon-plus icon-white"></i> Save</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Cancel</button>
+ 	
+  </div>
+</div>
+<br/>	
+{{ form }}
+
+
+</form>
+	
+{% endblock %}

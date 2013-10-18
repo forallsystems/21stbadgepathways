@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Badge Details{%endblock%}
+{% block content %}
+
+ {% if badge_details.image_url %}<img src="{{badge_details.image_url}}" width="200" align='left' />{%endif%}
+ <h2>{{badge_details.name}}</h2>
+ <p>
+ <b>Description: </b> {{badge_details.description|linebreaksbr}}
+ </p>
+ <p>
+ <b>Criteria: </b> {{badge_details.criteria|linebreaksbr}}
+ </p>
+<br/>
+
+
+
+
+	
+{% endblock %}

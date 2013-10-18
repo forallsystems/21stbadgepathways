@@ -1,0 +1,727 @@
+
+
+#header {
+height:100px;
+background-color:#ff0000;
+padding:10px;
+}
+
+#header.authenticated {
+height:127px;
+background-position:top center;
+}
+
+#header .breadcrumb {
+background-color:#ffffff;
+margin-top:0px;
+}
+
+#body {
+padding-top:10px;
+background-color:#ffffff;
+}
+
+#district_logo {
+width:30%;
+}
+
+#site_logo {
+margin-top:0px;
+}
+
+table {
+background-color:#ffffff;
+}
+
+#content {
+padding-bottom:30px;
+min-height:350px;
+overflow-x:scroll;overflow-y:hidden;
+background-color:#ffffff;
+}
+
+#footer {
+color:#ffffff;
+border-top:1px solid #cccccc;
+padding-top:20px;
+padding-bottom:20px;
+background-color:#383838;
+}
+
+.accordion-group {
+background-color:#ffffff;
+}
+
+.accordion-inner {
+background-color:#eeeeee;
+}
+
+.accordion-inner table {
+background-color:#eeeeee;
+}
+
+.welcome {
+margin-top:30px;
+margin-left:25px;
+font-size:1.3em;
+line-height:1.5em;
+
+}
+
+.loginTable {
+background-color:#ffffff;
+font-size:1.1em;
+
+-webkit-border-radius: 6px;
+-moz-border-radius: 6px;
+border-radius: 6px;
+
+color:#000000;
+
+
+}
+
+.loginTable a {
+color:#666666;
+}
+
+.loginTable a:hover {
+color:#000000;
+}
+
+.loginTable tr, .loginTable td {
+border:0;
+}
+.loginTable td {
+padding:25px;
+padding-top:15px;
+padding-bottom:15px;
+}
+
+.loginTable #id_username, #id_password {
+width:95%;
+margin-top:5px;
+font-size:1.1em;
+margin-bottom:15px;
+}
+
+.loginTable ul {
+list-style: none;
+margin:0;padding:0;
+}
+
+#content h1 {
+font-size:1.8em;
+font-weight:normal;
+text-transform:uppercase;
+margin-top:25px;
+border-top:1px solid #cccccc;
+border-bottom:1px solid #cccccc;
+
+}
+
+#explore {
+
+}
+
+#explore .login_block {
+	width:450px;
+	float:left;
+}
+
+#explore .pathways_block {
+	width:450px;
+	margin-left:40px;
+	float:left;
+	padding-top:10px;
+}
+
+#explore .badges_block {
+	width:808px;
+	margin-left:90px;
+	float:left;
+}
+
+
+
+
+#badges .pathway {
+margin-top:8px;
+font-size:1.3em;
+padding-left:15px;
+color:#000000;
+width:100%;
+letter-spacing:-1px;
+}
+
+#badges .pathway .pathway_name {
+line-height:4em;
+}
+
+#badges .pathway:hover {
+color:#666666;
+}
+
+#badges .pathway.selected {
+color:BLUE;
+}
+
+
+#badges a {
+text-decoration:none;
+}
+
+#badges {
+margin-top:25px;
+background-image:url('../images/p2s-passport-big-bgrnd.png');
+background-repeat:no-repeat;
+height:600px;
+margin-left:60px;
+}
+
+#badges select {
+margin-top:7px;
+}
+
+#badges .pathwayLabel {
+padding:8px;
+padding-left:0px;
+padding-top:25px;
+padding-bottom:2px;
+margin-left:12px;
+margin-right:12px;
+border-bottom:0px solid #cccccc;
+font-weight:bold;
+font-size:1.6em;
+}
+
+#badges img {
+}
+
+#badges img:hover {
+	opacity:0.6;
+}
+
+.viewPathwaysPathwayName {
+font-size:1.3em;
+line-height:2em;
+}
+
+.pbadge {
+width:80px;
+float:left;
+text-align:center;
+margin-bottom:15px;
+padding-left:5px;
+padding-right:5px;
+min-height:130px;
+ font-size:0.9em;
+ line-height:1.3em;
+}
+
+#badges .badgeLabel {
+	float:left;
+	width:100px;
+    padding-top:8px;
+	font-size:0.9em;
+	line-height:1.2em;
+	height:80px;
+	
+	display: table; 
+}
+
+#badges .badgeLabel span {
+display:block;
+display: table-cell; 
+  vertical-align: middle; 
+  
+}
+
+#badges .page1 {
+width:380px;
+float:left;
+margin-left:10px;
+
+}
+
+#badges .pathwayList {
+max-height:530px;
+overflow-y:auto;
+}
+
+#pathways .pathwayList {
+max-height:550px;
+overflow-y:auto;
+}
+
+#badges .page2 {
+margin-left:3px;
+padding-left:10px;
+width:380px;
+float:left;
+}
+
+#badges h3 {
+padding-left:13px;
+padding-top:15px;
+letter-spacing:-1px;
+font-weight:normal;
+}
+
+#badges .page3 {
+display:none;
+width:210px;
+float:left;
+margin-left:10px;
+}
+
+#badges .page4 {
+display:none;
+margin-left:8px;
+width:210px;
+float:left;
+}
+
+
+.menu {
+margin-top:10px;
+background-color:#f0f0f0;
+font-size:1.3em;
+border:1px solid #cccccc;
+-webkit-border-radius: 6px;
+-moz-border-radius: 6px;
+border-radius: 6px;
+padding:15px;
+color:#000000;
+margin-bottom:14px;
+}
+
+.menu.title {
+background-color:#666666;
+color:#ffffff;
+font-weight:bold;
+}
+
+a .menu:hover {
+background-color:#cccccc;
+
+color:#000000;
+}
+
+#body a:hover {
+text-decoration:none;
+}
+
+.menu i {
+float:right;
+}
+
+.menu.student {
+padding:0;
+margin-top:30px;
+background-color:#ffffff;
+color:#ffffff;
+margin-bottom:16px;
+}
+
+.studentName {
+font-size:2em;
+line-height:1.1em;
+color:#ff0000;
+}
+
+.studentBlock {
+float:left;
+padding:15px;
+}
+
+.studentBlock small {
+font-size:0.7em;
+line-height:0;
+color:#000000;
+}
+
+.studentBlock a {
+color:#000000;
+font-weight:bold;
+}
+
+#content .studentBlock a:hover {
+text-decoration:underline;
+}
+
+.badgesBlock {
+float:right;
+padding:15px;
+padding-left:20px;
+padding-right:20px;
+padding-bottom:21px;
+text-align:center;
+border-left:1px solid #ffffff;
+}
+.pointsBlock {
+float:right;
+padding:15px;
+padding-left:20px;
+padding-right:20px;
+padding-bottom:21px;
+text-align:center;
+border-left:1px solid #ffffff;
+}
+
+.badgesBlock h1, .pointsBlock h1 {
+margin-bottom:0px;
+}
+
+.badgesBlock , .pointsBlock  {
+font-size:0.7em;
+line-height:1em;
+}
+
+.progress {
+margin-bottom:0px;
+}
+
+.btn-primary {
+  background:none;
+  background-color:#000000;
+  color: #fff !important;
+	text-transform:uppercase;
+  
+}
+
+.user_pathways {
+margin-top:20px;
+}
+
+
+.user_pathways .pathway {
+margin-bottom:8px;
+background-color:#ffffff;
+font-size:1.2em;
+-webkit-border-radius: 6px;
+-moz-border-radius: 6px;
+border-radius: 6px;
+padding:10px;
+padding-left:5px;
+padding-top:0px;
+padding-bottom:2px;
+color:#000000;
+
+}
+
+.user_pathways .pathwayName {
+padding-top:25px;
+padding-left:3px;
+padding-right:5px;
+font-size:1.1em;
+letter-spacing:-1px;
+}
+
+
+.user_pathways .pathway i {
+
+float:right;
+}
+
+.user_pathways .pathway:hover {
+background-color:#eeeeee;
+}
+
+
+.user_pathways .progress {
+margin-top:5px;
+}
+
+table i {
+font-size:1.4em;
+}
+
+table a i:hover {
+text-decoration:none;
+}
+
+table.dataTable {
+  max-width: none;
+}
+
+#id_gradelevels {
+height:230px;
+}
+
+.awardLabel {
+color:#b7790e;
+}
+
+#badges .pathway {
+width:95%;
+margin-top:0px;
+border-bottom:1px solid #cccccc;
+}
+
+#badges .pathwayName {
+padding-top:25px;
+padding-left:3px;
+padding-right:5px;
+letter-spacing:-1px;
+line-height:1.5em;
+}
+
+#student_badges_block .pathway {
+padding-bottom:0px;
+}
+
+#content a:focus {
+outline:none;
+}
+
+::-moz-focus-inner {
+border:0;
+}
+
+.btn-large {
+padding: 15px 20px;
+font-size: 16px;
+line-height: normal;
+-webkit-border-radius: 5px;
+-moz-border-radius: 5px;
+border-radius: 5px;
+}
+
+.dropdown-menu li {
+  display: block;
+}
+.alert {
+margin-bottom:0px;
+}
+.alert a {
+color:#C09853;
+}
+
+.alert a:hover {
+color:#000000;
+}
+
+.progress {
+border:1px solid #cccccc;
+}
+
+table.sitemap {
+background-color:#d5ecfa;
+}
+
+table a {
+color:#000000;
+text-decoration:underline;
+}
+
+table a:hover {
+color:#cccccc;
+text-decoration:none;
+}
+
+.row-fluid div.span6~div.span6 {
+	text-align:right;
+}
+
+#content .alignLeft  {
+text-align:left;
+}
+
+
+	
+#header div.span6 {
+	text-align:right;
+	}
+	
+
+th.center, td.center {
+text-align:center;
+}
+	
+.sortable {
+	width: 900px;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+.sortable.grid {
+	overflow: hidden;
+}
+.sortable li {
+	list-style: none;
+	border: 1px solid #CCC;
+	background: #ffffff;
+	color: #000000;
+	margin: 5px;
+	padding: 5px;
+	height: 22px;
+}
+
+.sortable.grid li {
+	line-height:30px;
+	float: left;
+	width: 150px;
+	height: 270px;
+	text-align: center;
+}
+.sortable.grid.pathwaysgrid li {
+	line-height:30px;
+	float: left;
+	width: 150px;
+	height: 200px;
+	text-align: center;
+}
+.handle {
+	cursor: move;
+}
+.sortable.connected {
+	width: 200px;
+	min-height: 100px;
+	float: left;
+}
+li.disabled {
+	opacity: 0.5;
+}
+li.highlight {
+	background: #FEE25F;
+}
+li.sortable-placeholder {
+	border: 1px dashed #CCC;
+	background: none;
+}
+
+#sortable li i {
+font-size:1.4em;
+}
+
+li a:hover {
+text-decoration:none;
+}
+
+/* Landscape phones and down */
+@media (max-width: 480px) { 
+
+	#content div.span6 {
+	text-align:left;
+	line-height:0;
+	padding-top:5px;
+	}
+
+	#district_logo {
+	margin-top:0px;
+	margin-left:0px;
+	width:40%;
+	margin-bottom:10px;
+	}
+	
+	#site_logo {
+	margin-top:5px;
+	margin-left:0px;
+	width:80%;
+	}
+	
+	#header div.span6 {
+	text-align:center;
+	}
+	
+	.welcome {
+	margin-top:0px;
+	-webkit-border-radius: 0px;
+     -moz-border-radius: 0px;
+          border-radius: 0px;
+          margin-bottom:0px;
+	}
+	
+	.loginTable {
+	margin-top:0px;
+	-webkit-border-radius: 0px;
+     -moz-border-radius: 0px;
+          border-radius: 0px;
+	}
+
+	#explore {
+	width:480px;
+	overflow:hidden;
+	}
+	
+	#explore .login_block {
+		width:92%;
+		float:none;
+	}
+	
+	#explore .pathways_block {
+		width:100%;
+		margin-left:0px;
+		float:none;
+		padding-top:10px;
+	}
+	
+	#explore .badges_block {
+		width:100%;
+		margin-left:0px;
+		float:none;
+	}
+
+	#footer div.span6 {
+		text-align:center;
+	}
+
+	#badges {
+		margin-top:25px;
+		background-image:none;
+		background-repeat:no-repeat;
+		height:auto;
+	}
+	
+	#badges .page1 .pathwayLabel {
+		display:none;
+	}
+	
+	#badges .pathwayList {
+		height:auto;
+		max-height:none;
+	}
+	
+	.menu.student {
+		margin-top:0px;
+		-webkit-border-radius: 0px;
+     -moz-border-radius: 0px;
+          border-radius: 0px;
+        margin-bottom:0px;
+	}
+		
+	.menu {
+	margin-top:5px;
+	margin-bottom:5px;
+	}
+	
+	#content h2 {
+	margin-bottom:0px;
+	}
+	
+	body {
+	background-color:#d5ecfa;
+	}
+	
+	#badgesTable_filter,#badgesTable_length {
+	display:none;
+	}
+	
+	#student_pathways_block {
+	display:none;
+	}
+	
+	.sortable {
+	width: 100%;
+	}
+	
+	.sortable li {
+	margin-left:0px;
+	}
+	
+	ul {
+	margin-left:0px;
+	}
+}

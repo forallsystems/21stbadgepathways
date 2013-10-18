@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{% if form.id.value %}Edit{%else%}Add{%endif%} Badge{%endblock%}
+{% block breadcrumbs %}
+<li><span class="divider">/</span> <a href="/badges/" class="muted">Manage Badges</a></li>
+<li class='active'><span class="divider">/</span> {% if form.id.value %}Edit{%else%}Add{%endif%} Badge</li>
+{% endblock %}
+{% block content %}
+
+<form action="" method="post" class="form-horizontal" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	{% if form.id.value %}
+  	<h2>Edit Badge</h2>
+  	{% else %}
+  	<h2>Add Badge</h2>
+  	{% endif %}
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="submit" ><i class="icon-plus icon-white"></i> Save</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/badges/'"><i class="icon-chevron-left icon-white"></i> Cancel</button>
+ 	
+  </div>
+</div>
+<br/>
+
+<div class="row-fluid">
+  <div class="span6" id="col1">
+  </div>
+  <div class="span6" id="col2">
+  </div>
+</div>
+	
+{{ form }}
+
+
+</form>
+
+<script language="JavaScript">
+
+$('#div_id_identifier').appendTo('#col1');
+$('#div_id_name').appendTo('#col1');
+$('#div_id_description').appendTo('#col1');
+$('#div_id_criteria').appendTo('#col1');
+$('#div_id_image').appendTo('#col1');
+
+$('#div_id_is_active').appendTo('#col2');
+$('#div_id_years_valid').appendTo('#col2');
+$('#div_id_weight').appendTo('#col2');
+$('#div_id_points').appendTo('#col2');
+$('#div_id_allow_send_obi').appendTo('#col2');
+$('#div_id_gradelevels').appendTo('#col2');
+</script>
+	
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{% if form.id.value %}Edit{%else%}Add{%endif%} Item{%endblock%}
+{% block breadcrumbs %}
+<li><span class="divider">/</span> <a href="/vendors/" class="muted">Manage Vendors</a></li>
+<li><span class="divider">/</span> <a href="/vendors/items/" class="muted">Manage Items</a></li>
+<li class='active'><span class="divider">/</span> {% if form.id.value %}Edit{%else%}Add{%endif%} Item</li>
+{% endblock %}
+{% block content %}
+<form action="" method="post" class="form-horizontal">
+{% csrf_token %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	{% if form.id.value %}
+  	<h2>Edit Item</h2>
+  	{% else %}
+  	<h2>Add Item</h2>
+  	{% endif %}
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="submit" ><i class="icon-plus icon-white"></i> Save</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/vendors/items/'"><i class="icon-chevron-left icon-white"></i> Cancel</button>
+ 	
+  </div>
+</div>
+<br/>	
+{{ form }}
+
+<div class="row-fluid">
+  <div class="span6" id="col1">
+  </div>
+  <div class="span6" id="col2">
+  </div>
+</div>
+
+</form>
+
+<script language="JavaScript">
+
+$('#div_id_name').appendTo('#col1');
+$('#div_id_description').appendTo('#col1');
+$('#div_id_points').appendTo('#col1');
+$('#div_id_inventory').appendTo('#col1');
+
+$('#div_id_organization').appendTo('#col2');
+$('#id_organization').height(360);
+
+
+</script>
+	
+{% endblock %}

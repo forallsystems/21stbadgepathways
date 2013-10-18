@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}My Earned Badges{%endblock%}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> My Earned Badges</li>
+{% endblock %}
+{% block content %}
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>My Earned Badges</h2>
+  </div>
+  <div class="span6">
+  	<br/>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+</div>
+
+<br/>
+
+<table class="table table-bordered table-striped" id="badgesTable">
+<thead>
+	<tr>
+		<th>Badge</th>
+		<th style='text-align:center;' >Date Earned</th>
+		<th width='250' data-hide="phone">Pathway</th>
+		<th style='text-align:center;' width='100'>Points</th>
+	</tr>
+</thead>
+<tbody>
+	{%for award in award_list %}
+	<tr>
+	<td>{% if award.image_url %}<img src="{{award.image_url}}" style="width:30px;height:30px;" />{%endif%} {{award.name}}</td>
+	<td style='text-align:center;'>{{award.date_created}}</td>
+	<td>{{award.pathway_names}}</td>
+	<td style='text-align:center;'>{{award.points}}</td>
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+
+<script language="JavaScript">
+
+	var responsiveHelper;
+	var breakpointDefinition = {
+	 	tablet: 1024,
+	    phone : 480
+	};
+	
+	var tableContainer = $('#badgesTable');
+
+	tableContainer.dataTable({
+		"bStateSave": true,
+        "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap",
+        // Setup for responsive datatables helper.
+	    bAutoWidth     : false,
+	    fnPreDrawCallback: function () {
+	        // Initialize the responsive datatables helper once.
+	        if (!responsiveHelper) {
+	            responsiveHelper = new ResponsiveDatatablesHelper(tableContainer, breakpointDefinition);
+	        }
+	    },
+	    fnRowCallback  : function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+	        responsiveHelper.createExpandIcon(nRow);
+	    },
+	    fnDrawCallback : function (oSettings) {
+	        responsiveHelper.respond();
+	    }
+    } );
+</script>
+	
+{% endblock %}

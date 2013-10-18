@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}My Badge Pathways{%endblock%}
+{% block custom_head_content %}
+<script src="{{ STATIC_URL }}js/jquery.sortable.min.js" type="text/javascript"></script>
+
+{% endblock %}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> My Badge Pathways</li>
+{% endblock %}
+{% block content %}
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>My Badge Pathways</h2>
+  </div>
+  <div class="span6" >
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="button" onclick="selectPathway()" {%if not all_pathway_list|length%}disabled='disabled'{%endif%}><i class="icon-plus icon-white"></i> Show Pathway</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+</div>
+
+<div class='clearfix'></div>
+   <br/>
+   <ul id="sortable" class="sortable grid pathwaysgrid" >
+
+	{%for pathway in pathway_list %}
+	<li id="pathway_{{pathway.id}}">
+	{% if pathway.badge_image_url %}<img src="{{pathway.badge_image_url}}" style="width:140px;height:140px;" />{%endif%}
+	<br/><small>{{pathway.name}}</small>
+	<br/>
+		<div class="progress progress-striped progress-warning" title="({{pathway.award_total}} of {{pathway.total_badges}}) ">
+		  <div class="bar" style="width: {{pathway.percent_complete}}%;"></div>
+		</div>
+	
+	<br/>
+	
+		<a href="javascript:void(0)" onclick="confirmDelete('{{pathway.id}}');" title='Hide Pathway'>
+		<span class="label label-info" style="position:relative;top:-232px;left:63px;">Hide</span>
+		</a>
+	
+	</li>
+	{%empty%}
+	
+		<div class="well text-warning">
+		  <i class="icon-warning-sign"></i> Click on the 'Show Pathway' button to add a pathway to your account. 
+		</div>
+	
+	{% endfor %}
+   </ul>
+
+<div class="modal hide fade" id="selectPathwayModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Show Pathway</h3>
+  </div>
+  <div class="modal-body">
+  
+    <table class="table table-bordered table-striped" id="allPathwaysTable">
+	<thead>
+		<tr>
+			<th width='350'>Name</th>
+			<th data-hide="phone" width='600'>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		{%for pathway in all_pathway_list %}
+		<tr>
+		<td>
+			<a href="/my_pathways/add/{{pathway.id}}/">
+			{% if pathway.badge_image_url %}<img src="{{pathway.badge_image_url}}" style="width:30px;height:30px;"/>{%endif%} {{pathway.name}}
+			</a>
+		</td>
+		<td>{{pathway.description}}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+	</table>
+    
+
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Cancel</button>
+  </div>
+</div>
+
+
+<div class="modal hide fade" id="deletePathwayModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Hide Pathway?</h3>
+  </div>
+  <div class="modal-body">
+    <p>
+    <b>Are you sure you want to hide this pathway?</b> 
+    You may display this pathway at any time by selecting the 'Show Pathway' 
+    button on the My Badge Pathways screen.
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Cancel</button>
+    <buton class="btn btn-primary" id="deleteButton">Hide</button>
+  </div>
+</div>
+
+<script language="JavaScript">
+	
+	$('#sortable').sortable().bind('sortupdate', function() {
+    	
+	    var order = new Array()
+	    
+	    $('#sortable li').each(function(i, li) {
+		  var product = $(li);  
+		  order[i]=(product.attr('id'));
+		  // your code goes here
+		});
+		
+		var parms = {
+	        'pathway': order
+	    };
+		
+        $.ajax({
+          type: "POST",
+          data: parms,
+          url: "/my_pathways/update_sort/"
+        });
+	});
+	
+	var responsiveHelper;
+	var breakpointDefinition = {
+	 	tablet: 1024,
+	    phone : 480
+	};
+	
+	var tableContainer = $('#allPathwaysTable');
+    
+    tableContainer.dataTable({
+		"bStateSave": true,
+        "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap",
+        "bPaginate": false,
+         // Setup for responsive datatables helper.
+	    bAutoWidth     : false,
+	    fnPreDrawCallback: function () {
+	        // Initialize the responsive datatables helper once.
+	        if (!responsiveHelper) {
+	            responsiveHelper = new ResponsiveDatatablesHelper(tableContainer, breakpointDefinition);
+	        }
+	    },
+	    fnRowCallback  : function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+	        responsiveHelper.createExpandIcon(nRow);
+	    },
+	    fnDrawCallback : function (oSettings) {
+	        responsiveHelper.respond();
+	    }
+    } );
+    
+    function selectPathway() {
+    $('#selectPathwayModal').modal();
+    	/*
+    	$('#selectPathwayModal').modal().css({
+	        width: 'auto',
+	        'margin-left': function () {
+	            return -($(this).width() / 2);
+	        }
+	    });
+	    */
+    }
+    
+    function confirmDelete(pathway_id) {
+    	$("#deleteButton").unbind("click").click(function(){document.location.href="/my_pathways/delete/"+pathway_id+"/";});
+    	$('#deletePathwayModal').modal();
+    }
+</script>
+	
+{% endblock %}

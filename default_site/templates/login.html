@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Login{%endblock%}
+{% block content %}
+<div class="row-fluid">
+      <div class="span6">
+	  	<p class='welcome'>
+	  	Welcome to the 21<sup>st</sup> century badge pathways website.  
+	  	Students, enter your username and password below 
+		to login.
+	  	</p>
+	  	
+	  	<form method="post" action="/">
+		<input type="hidden" name="next" value="/init_login/" />
+		{% csrf_token %}
+			
+			<table class="table loginTable" border="0" >
+			{% if form.errors %}
+			<tr class='error'><td colspan='2'>
+					{% if form.non_field_errors %}
+					<span class='text-error'>{{ form.non_field_errors }}</span>
+					{% else %}
+					<span class='text-error'>E-mail and password is required to login.</span>
+					{% endif %}	
+			</td></tr>	
+			{% endif %}
+			<tr>
+			    <td colspan='2'>
+			    <b>Username:</b><br/>
+			    {{ form.username }}
+				<br/>
+			    <b>Password:</b><br/>
+			    {{ form.password }}
+			    <br/>
+			    <label class="checkbox muted">
+			    <input type="checkbox" name="remember" id="remember" />
+				Remember me on this computer
+				</label>
+			    </td>
+			</tr>
+			<tr>
+				<td style='padding-top:0px;'>
+				<button type="submit" value="Login" id="loginButton" class="btn-primary btn-large"  onclick="handleLogin()">Website Login</button>
+				</td>
+				<td style="text-align:right;">
+				<label>
+				<a href="{% url "django.contrib.auth.views.password_reset" %}">Recover your password &nbsp;<i class='icon icon-circle-arrow-right'></i></a>&nbsp;&nbsp;
+				</label>
+				</td>
+			</tr>
+			</table>
+		</form>
+	 
+	</div><div class="span6" style="text-align:left;">
+
+
+		<h1>Explore Our Pathways</h1>
+		
+		{%for pathway in pathway_list %}
+	  		<span class='viewPathwaysPathwayName'>{{pathway.name}}</span>&nbsp;&nbsp; <a class='learnMore' href='javascript:void(0)' onclick="showPathwayDetail('{{pathway.id}}')"><i class='icon-info-sign'></i> Learn more about this pathway</a><br/>
+	  		<div class='viewPathwaysBadges' id="pathwayBadges{{pathway.id}}"></div>
+	  		<div class='clearfix'></div>
+	  		
+	  		<script>
+	  		loadBadges('{{pathway.id}}');
+	  		</script>
+			
+		{% endfor %}
+		
+	</div>
+</div>
+
+<div class="modal hide fade" id="pathwayModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3 id='pathwayModalTitle'>Pathway Description</h3>
+  </div>
+  <div class="modal-body">
+    <p id='pathwayModalDescription'></p>
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Done</button>
+  </div>
+</div>
+
+<div class="modal hide fade" id="badgeModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3 id='badgeModalTitle'>Badge Details</h3>
+  </div>
+  <div class="modal-body">
+    <p id='badgeModalDescription'></p>
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Done</button>
+  </div>
+</div>
+
+<script language="JavaScript">
+
+var remember = $.cookie('remember');
+if ( remember == 'true' ) {
+	var username = $.cookie('username');
+	$('#id_username').attr("value", username);
+	$('#remember').attr('checked','checked');
+}
+
+function handleLogin() {
+	if ($('#remember').attr('checked')) {
+		var username = $('#id_username').attr("value");
+		$.cookie('username', username, { expires: 14 });
+		$.cookie('remember', true, { expires: 14 });
+	} else {
+		// reset cookies
+		$.cookie('username', null);
+		$.cookie('remember', null);
+	}
+}
+
+
+
+
+</script>
+	
+	
+	
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Sort Pathways{%endblock%}
+{% block custom_head_content %}
+<script src="{{ STATIC_URL }}js/jquery.sortable.min.js" type="text/javascript"></script>
+
+<style>
+	.sortable {
+		width: 900px;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+	}
+	.sortable.grid {
+		overflow: hidden;
+	}
+	.sortable li {
+		list-style: none;
+		border: 1px solid #CCC;
+		background: #ffffff;
+		color: #1C94C4;
+		margin: 5px;
+		padding: 5px;
+		height: 22px;
+	}
+	.sortable.grid li {
+		line-height: 80px;
+		float: left;
+		width: 150px;
+		height: 150px;
+		text-align: center;
+	}
+	.handle {
+		cursor: move;
+	}
+	.sortable.connected {
+		width: 200px;
+		min-height: 100px;
+		float: left;
+	}
+	li.disabled {
+		opacity: 0.5;
+	}
+	li.highlight {
+		background: #FEE25F;
+	}
+	li.sortable-placeholder {
+		border: 1px dashed #CCC;
+		background: none;
+	}
+	
+	
+	
+	li a:hover {
+	text-decoration:none;
+	}
+</style>
+{% endblock %}
+{% block breadcrumbs %}
+<li><span class="divider">/</span> <a href="/pathways/" class="muted">Manage Pathways</a></li>
+<li class='active'><span class="divider">/</span> Sort Pathways</li>
+{% endblock %}
+{% block content %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Sort Pathways</h2>
+  </div>
+  <div class="span6" style="text-align:right;">
+  	
+  	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/pathways/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+  
+   <div class='clearfix'></div>
+   
+   <ul id="sortable" class="sortable grid" >
+   		{% for pathway in pathway_list %}
+		<li id="pathway_{{pathway.id}}">
+			<img src="{{pathway.badge_image_url}}" width="140" />
+		</li>
+		{% empty %}
+		<div class="well text-warning">
+		  <i class="icon-warning-sign"></i> No pathways found.
+		</div>
+		{% endfor %}
+	</ul>
+</div>
+
+<script language="JavaScript">
+   
+    $('#sortable').sortable().bind('sortupdate', function() {
+    	
+	    var order = new Array()
+	    
+	    $('#sortable li').each(function(i, li) {
+		  var product = $(li);  
+		  order[i]=(product.attr('id'));
+		  // your code goes here
+		});
+		
+		var parms = {
+	        'pathway': order
+	    };
+		
+        $.ajax({
+          type: "POST",
+          data: parms,
+          url: "/pathways/update_sort/"
+        });
+	});
+</script>	
+	
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{% if form.id.value %}Edit{%else%}Add{%endif%} Pathway{%endblock%}
+{% block breadcrumbs %}
+<li><span class="divider">/</span> <a href="/pathways/" class="muted">Manage Pathways</a></li>
+<li class='active'><span class="divider">/</span> {% if form.id.value %}Edit{%else%}Add{%endif%} Pathway</li>
+{% endblock %}
+{% block content %}
+
+<form action="" method="post" class="form-horizontal" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	{% if form.id.value %}
+  	<h2>Edit Pathway</h2>
+  	{% else %}
+  	<h2>Add Pathway</h2>
+  	{% endif %}
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="submit" ><i class="icon-plus icon-white"></i> Save</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/pathways/'"><i class="icon-chevron-left icon-white"></i> Cancel</button>
+ 	
+  </div>
+</div>
+<br/>	
+
+
+ 
+
+{{ form }}
+
+<div class="row-fluid">
+  <div class="span6" id="col1">
+  </div>
+  <div class="span6" id="col2">
+  </div>
+</div>
+
+</form>
+
+<script language="JavaScript">
+
+$('#div_id_name').appendTo('#col1');
+$('#div_id_pathwaycategory').appendTo('#col1');
+$('#div_id_description').appendTo('#col1');
+$('#div_id_organization').appendTo('#col1');
+$('#id_organization').height(280);
+
+$('#div_id_badge_name').appendTo('#col2');
+$('#div_id_badge_description').appendTo('#col2');
+$('#div_id_badge_criteria').appendTo('#col2');
+$('#div_id_badge_image').appendTo('#col2');
+$('#div_id_badge_points').appendTo('#col2');
+</script>
+	
+{% endblock %}

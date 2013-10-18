@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{% if form.id.value %}Edit{%else%}Add{%endif%} District Admin{%endblock%}
+{% block content %}
+
+<form action="" method="post" class="form-horizontal">
+{% csrf_token %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	{% if form.id.value %}
+  	<h2>Edit District Admin Account</h2>
+  	{% else %}
+  	<h2>Add District Admin Account</h2>
+  	{% endif %}
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="submit" ><i class="icon-plus icon-white"></i> Save</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/districtadmins/'"><i class="icon-chevron-left icon-white"></i> Cancel</button>
+ 	
+  </div>
+</div>
+<br/>	
+{{ form }}
+
+
+</form>
+	
+{% endblock %}

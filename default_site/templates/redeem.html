@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Redeem My Points{%endblock%}
+{% block custom_head_content %}
+<style>
+	.cart {
+		border: 1px solid #CCC;
+		padding: 5px;
+		margin-top:5px;
+		min-height:250px;
+		background-color:#ffffff;
+	}
+	
+	.sortable {
+		width: 100%;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		margin-left:0px;
+	}
+	.sortable.grid {
+		overflow: hidden;
+	}
+	.sortable li {
+		list-style: none;
+		border: 1px solid #CCC;
+		background: #ffffff;
+		margin: 5px;
+		padding: 5px;
+	}
+	.sortable.grid li {
+		
+		float: left;
+		width: 150px;
+		
+		text-align: center;
+	}
+	.handle {
+		cursor: move;
+	}
+	
+	li.disabled {
+		opacity: 0.5;
+	}
+	li.highlight {
+		background: #FEE25F;
+	}
+	
+	hr {
+		margin:0;
+		margin-bottom:5px;
+		margin-top:5px;
+	}
+</style>
+{%endblock%}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> Redeem My Points</li>
+{% endblock %}
+{% block content %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Redeem My Points</h2>
+  
+
+  </div>
+  <div class="span6" >
+  	<br/>
+  	<button class="btn  btn-large" type="button" onclick="javascript:document.location.href='/redeem/history/'"> Order History</button>
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+ 
+  </div>
+</div>
+
+<div class='clearfix'></div>
+
+{% if item_list|length %}
+	<br/>
+  <div class="row-fluid">
+  <div class="span9">
+	
+    <ul class='sortable grid'>
+	{%for item in item_list %}
+	<li {% if not item.inventory%}class='disabled'{%endif%}>
+	<small>{{item.vendor_name}}</small>
+	<hr/>
+	<div style="width:100px;height:100px;text-align:center;margin:0 auto;">
+	{% if item.vendor_image_url %}<img src="{{item.vendor_image_url}}" style="width:100px;max-height:100px;"/>{%endif%}
+	</div>
+	<br/>
+	{{item.name}}<br/>
+	<small class="text-info">{{item.points}} Points</small>
+	
+	{% if item.inventory %}
+		{% if item.id in cart %}
+		<button class="btn  btn-block btn-primary disabled" type="button" onclick="javascript:document.location.href='/redeem/add/{{item.id}}/'">Item in Cart</button>
+		{% else %}
+		<button class="btn  btn-block btn-primary" type="button" onclick="javascript:document.location.href='/redeem/add/{{item.id}}/'">Add to Cart</button>
+		{% endif %}
+	{% else %}
+	<button class="btn  btn-block disabled" type="button">Sold Out</button>
+	{% endif %}
+	</li>
+	{% endfor %}
+	</ul>
+	
+  </div>
+  <div class="span3" style="text-align:center;">
+  	<div class='cart'>
+	  	<h4>{{points_balance}} <span class="muted">Points to Spend</span></h4>
+	
+	  	{% if cart|length %}
+	  		<div style="min-height:165px;">
+		  		<table class="table table-condensed">
+		  		{% for key,item in cart.items %}
+		  		<tr>
+		  			<td style="font-size:0.9em;">{{item.vendor_name}}: {{item.name}}</td>
+		  			<td style="text-align:center;font-size:0.9em;"><b>{{item.points}}</b></td>
+		  			<td style="text-align:center"><a href="/redeem/remove/{{item.id}}/"><i class='icon icon-remove-circle' title="Remove From Cart"></i></a></td>
+		  		</tr>
+		  		{% endfor %}
+		  		<tr>
+		  			<td class="{% if cart_total > points_balance %}text-error{% else %}text-info{%endif%}"><br/><b>Total</b></td>
+		  			<td class="{% if cart_total > points_balance %}text-error{% else %}text-info{%endif%}" style="text-align:center"><br/><b>{{cart_total}}</b></td>
+		  			<td></td>
+		  		</tr>
+		  		</table>
+	  		</div>
+	  		{% if cart_total > points_balance %}
+	  		<button class="btn  btn-block btn-large btn-primary disabled" type="button">Not Enough Points</button>
+	  		{% else %}
+	  		<button class="btn  btn-block btn-large btn-primary" type="button" onclick="confirmOrder()">Complete Order</button>
+	  		{% endif %}
+	  	{% else %}
+	  	<small class="text-warning">No items are in your cart.</small>
+	  	{% endif %}
+  	</div>
+  </div>
+  </div>
+  <div class='clearfix'></div>
+	
+{% else %}
+
+<br/>
+<div class="well text-error">
+  <i class="icon-warning-sign"></i> No items are available at this time.  Please check back soon! 
+</div>
+
+{% endif %}
+
+
+<div class="modal hide fade" id="confirmModal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Confirm Order Details</h3>
+  </div>
+  <div class="modal-body">
+    
+    {% if cart|length %}
+  		<table class="table table-condensed">
+  		{% for key,item in cart.items %}
+  		<tr>
+  			<td style="font-size:0.9em;">{{item.vendor_name}}: {{item.name}}</td>
+  			<td style="text-align:center;font-size:0.9em;"><b>{{item.points}}</b></td>
+  		</tr>
+  		{% endfor %}
+  		<tr>
+  			<td class="{% if cart_total > points_balance %}text-error{% else %}text-info{%endif%}"><br/><b>Total</b></td>
+  			<td class="{% if cart_total > points_balance %}text-error{% else %}text-info{%endif%}" style="text-align:center"><br/><b>{{cart_total}}</b></td>
+  			
+  		</tr>
+  		</table>
+  		
+  	{% endif %}
+
+  </div>
+  <div class="modal-footer">
+    <button data-dismiss="modal" class="btn">Cancel</button>
+    <buton class="btn btn-primary" id="completeButton">Complete Order</button>
+  </div>
+</div>
+	
+<script language="JavaScript">
+
+	$('#itemsTable').dataTable({
+		"bStateSave": true,
+       "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap"
+    } );
+    
+    function confirmOrder() {
+    	$("#completeButton").unbind("click").click(function(){document.location.href="/redeem/complete/";});
+    	$('#confirmModal').modal();
+    }
+
+
+</script>	
+	
+{% endblock %}
