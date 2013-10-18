@@ -1,7 +1,7 @@
 p2s/
 etc/
 cache/
-settings.py
+local_settings.py
 *.pyc
 .project
 .pydevproject
