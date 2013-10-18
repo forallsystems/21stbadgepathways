@@ -10,7 +10,7 @@ from django.db.models import Count
 from users.models import *
 from organizations.models import *
 from badges.models import *
-from forms import *
+from common.forms import *
 
 def custom_login(request,
                  template_name='login.html',
@@ -50,31 +50,25 @@ def custom_login(request,
 
     request.session.set_test_cookie()
 
-    #current_site = get_current_site(request)
-  
     pathway_list = Pathway.get_pathway_list()
 
     return render_to_response(template_name, {
         'form': form,
         'pathway_list':pathway_list,
         redirect_field_name: redirect_to,
-        #'site': current_site,
-        #'site_name': current_site.name,
     }, context_instance=RequestContext(request))
     
 
 
 @login_required
 def init_login(request):
-    #Determine user's role
     request.session['USER_ROLE'] = request.user.get_profile().get_role()
     org = Organization.get_user_organization(request.user.id)
     request.session['USER_ORGANIZATION_ID'] = org.id
     request.session['USER_ORGANIZATION_TYPE'] = org.type
     request.session['USER_ORGANIZATION_NAME'] = org.name
     request.session['USER_NAME'] = request.user.get_full_name()
-    #Determine user's root organization
-    
+
     return HttpResponseRedirect("/dashboard/")
     
 @login_required
@@ -95,12 +89,12 @@ def dashboard(request, templateName='studentDashboard.html'):
                 allow_backpack = 1
             
             return render(request,templateName,{'first_name':request.user.first_name,
-                                                                       'last_name':request.user.last_name,
-                                                                       'num_awards':num_awards,
-                                                                       'allow_backpack':allow_backpack,
-                                                                       'points_balance':points_balance,
-                                                                       'pathway_list':pathway_list,
-                                                                       'base_url':request.get_host()})
+                                               'last_name':request.user.last_name,
+                                               'num_awards':num_awards,
+                                               'allow_backpack':allow_backpack,
+                                               'points_balance':points_balance,
+                                               'pathway_list':pathway_list,
+                                               'base_url':request.get_host()})
     except:
         import sys
         print sys.exc_info()
