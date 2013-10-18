@@ -348,12 +348,19 @@ def delete_award(request, award_id):
 @login_required
 def pathway_summary(request):
     #Get available schools
-    school_filter = _setup_school_filter(request)
+    school_filter = _setup_school_filter(request, with_all_types=True)
     
     data_set = {}
     if school_filter['selected_school_id']:
         student_list = []
-        for user in Organization.get_students(school_filter['selected_school_id']):
+        
+        org_students = []    
+        if not len(school_filter['selected_school_id']) < 32: #ugly hack for now
+           org_students = Organization.get_students(school_filter['selected_school_id'])
+        else:
+           org_students = Organization.get_students_by_orgtype(school_filter['selected_school_id'])
+        
+        for user in org_students:
             student_list.append(user.user_id)
             
         for pu in Pathway_User.objects.filter(user__in=student_list,
@@ -374,7 +381,7 @@ def pathway_summary(request):
 @login_required
 def pathway_badge_completion(request):
     #Get available schools
-    school_filter = _setup_school_filter(request)
+    school_filter = _setup_school_filter(request, with_all_types=True)
     pathway_filter = _setup_school_pathway_filter(request, school_filter['selected_school_id'])
     
     student_list = [] 
@@ -385,8 +392,13 @@ def pathway_badge_completion(request):
             badge_list.append({'id':pb.badge_id,
                                'name':pb.badge.name})
             
-           
-        for user in Organization.get_students(school_filter['selected_school_id']):
+        org_students = []    
+        if not len(school_filter['selected_school_id']) < 32: #ugly hack for now
+           org_students = Organization.get_students(school_filter['selected_school_id'])
+        else:
+           org_students = Organization.get_students_by_orgtype(school_filter['selected_school_id'])
+        
+        for user in org_students:
             student_profile = user
             user = user.user
             awards = {}
@@ -412,7 +424,7 @@ def pathway_badge_completion(request):
 @login_required
 def badge_completion(request):
     #Get available schools
-    school_filter = _setup_school_filter(request)
+    school_filter = _setup_school_filter(request, with_all_types=True)
     
     
     student_list = [] 
@@ -422,16 +434,20 @@ def badge_completion(request):
         for b in Badge.get_badges():
             badge_list.append({'id':b.id,
                                'name':b.name})
-            
-           
-        for user in Organization.get_students(school_filter['selected_school_id']):
+     
+        org_students = []
+        if not len(school_filter['selected_school_id']) < 32: #ugly hack for now
+            org_students = Organization.get_students(school_filter['selected_school_id'])
+        else:
+           org_students = Organization.get_students_by_orgtype(school_filter['selected_school_id'])
+        
+        for user in org_students:
             student_profile = user
             user = user.user
             awards = {}
             for award in Award.get_user_awards(user.id):
                 awards[award.badge_id] = award.date_created.strftime('%m/%d/%Y')
-            
-            #student_profile = user.get_profile().get_student_profile()
+      
             student_list.append({'id':student_profile.id,
                                  'name':user.get_full_name(),
                                  'identifier':student_profile.identifier,
@@ -451,7 +467,15 @@ def _setup_school_pathway_filter(request, school_id):
     selected_pathway_id = _get_filter_value('pathway_id', request)
     
     student_list = []
-    for user in Organization.get_students(school_id):
+    
+    org_students = []    
+    if not len(school_id) < 32: #ugly hack for now
+       org_students = Organization.get_students(school_id)
+    else:
+       org_students = Organization.get_students_by_orgtype(school_id)
+    
+        
+    for user in org_students:
         student_list.append(user.user_id)
     
     pathwayMap = {}    
@@ -519,8 +543,9 @@ def _setup_pathway_filter(request):
             'selected_pathway_id':selected_pathway_id}
    
     
-def _setup_school_filter(request):
+def _setup_school_filter(request, with_all_types=False):
     school_list = []
+    type_list = {}
     selected_school_id = _get_filter_value('school_id', request)
     
     if(request.session['USER_ORGANIZATION_TYPE'] == Organization.TYPE_SCHOOL):
@@ -530,15 +555,21 @@ def _setup_school_filter(request):
         results = Organization.get_schools(request.session['USER_ORGANIZATION_ID'])
                                     
         for obj in results:
+            if obj.type_label and obj.type_label not in type_list: 
+                type_list[obj.type_label] = True
             school_list.append({'id':obj.id,'name':obj.__unicode__()})
    
     #Default to first school in list    
-    if selected_school_id == 0:
+    if selected_school_id == 0 or (selected_school_id == -1 and not with_all_types):
         if(len(school_list)):
             selected_school_id = school_list[0]['id']
             request.session['SELECTED_school_id'] = selected_school_id
         else:
             school_list.append({'id':0,'name':'No schools created.'})  
+            
+    if with_all_types:
+        for key,value in type_list.items():
+            school_list.append({'id':key,'name':'All '+key+' Schools'})
             
     return {'school_list':school_list,
             'selected_school_id':selected_school_id}
