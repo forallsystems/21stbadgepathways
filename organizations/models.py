@@ -18,8 +18,25 @@ class Organization(MPTTModel, BaseModel):
     parent = models.ForeignKey('self', blank=True, null=True, related_name='children')
     users = models.ManyToManyField(User, through='Organization_User')
     
+    enable_store = models.BooleanField(default=False)
+    
     def __unicode__(self):
         return self.name
+    
+    def update_organization(self,name,organization_id,enable_store):
+        self.name=name
+        self.organization_id = organization_id
+        self.enable_store = enable_store
+        self.save()
+    
+    @staticmethod
+    def create_organization(parent_id, name, type, type_label):
+        org = Organization(name=name,
+                           type=type,
+                           type_label=type_label,
+                           parent_id=parent_id)
+        org.save()
+        return org
     
     @staticmethod   
     def get_user_organization(user_id):             
@@ -47,7 +64,13 @@ class Organization(MPTTModel, BaseModel):
     @staticmethod
     def get_students_by_orgtype(organization_type_label):
         from users.models import StudentProfile
-        return StudentProfile.objects.select_related('gradelevel','user').filter(deleted=0,
+        if organization_type_label == 'All':
+            return StudentProfile.objects.only('user__id','gradelevel__name','user__first_name','user__last_name','identifier').select_related('gradelevel','user').filter(deleted=0,
+                                             user__organization__deleted=0,
+                                             user__groups__id=1,
+                                             user__is_active=1)
+        else:
+            return StudentProfile.objects.only('user__id','gradelevel__name','user__first_name','user__last_name','identifier').select_related('gradelevel','user').filter(deleted=0,
                                              user__organization__type_label=organization_type_label, 
                                              user__organization__deleted=0,
                                              user__groups__id=1,
@@ -57,6 +80,13 @@ class Organization(MPTTModel, BaseModel):
         return User.objects.filter(organization__id=organization_id, 
                                    organization__deleted=0,
                                    groups__id=3,
+                                   is_active=1)
+        
+    @staticmethod
+    def get_schooladmins(organization_id):
+        return User.objects.filter(organization__id=organization_id, 
+                                   organization__deleted=0,
+                                   groups__id=2,
                                    is_active=1)
         
     @staticmethod
@@ -90,5 +120,7 @@ class GradeLevel(BaseModel):
         if self.name == "Pre-K":
             return "Pre-K"
         return self.name.replace(" Grade","")
+    
+
     
    
