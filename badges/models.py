@@ -45,8 +45,9 @@ class Badge(BaseModel):
     
     @staticmethod
     def get_badge_by_identifier(identifier):
-        for badge in Badge.objects.filter(deleted=0,identifier=identifier):
-            return badge
+        if identifier:
+            for badge in Badge.objects.filter(deleted=0,identifier=identifier):
+                return badge
         return None
     
     def get_mapped_pathway_names(self):
@@ -171,6 +172,8 @@ class Badge_GradeLevel(BaseModel):
     badge = models.ForeignKey(Badge)
     gradelevel = models.ForeignKey(GradeLevel)   
     
+
+    
 class Award(BaseModel):
     badge = models.ForeignKey(Badge)
     user = models.ForeignKey(User)
@@ -179,21 +182,42 @@ class Award(BaseModel):
     comments = models.TextField(blank=True)
     expiration_date = models.DateField(blank=True,null=True)
     
-    external_id = models.IntegerField(default=0)
+    external_id = models.TextField(default=0)
     
     @staticmethod
-    def award_exisis(external_id):
+    def award_exists_by_external_id(external_id):
         if Award.objects.filter(external_id=external_id).count():
+            return True
+        return False
+    @staticmethod
+    def award_exists(user_id, badge_id):
+        if Award.objects.filter(badge_id=badge_id, user_id=user_id).count():
             return True
         return False
     
     @staticmethod
     def get_user_awards_by_pathway(user_id, pathway_id):
         badge_list = Pathway.get_related_badge_list(pathway_id)
-        return Award.objects.filter(user=user_id,
+        pathway = Pathway.objects.get(pk=pathway_id)
+        pb = pathway.get_pathway_badge()
+        badge_list.append(pb.id)
+        badgeMap = {}
+        award_list = Award.objects.filter(user=user_id,
                                     deleted=0,
                                     badge__in=badge_list)
         
+        #if they earned all awards, issue pathway badge
+        for a in award_list:
+            badgeMap[a.badge_id] = True
+        
+        if len(badgeMap) == len(badge_list)-1:
+            pathway = Pathway.objects.get(pk=pathway_id)
+            pathway_badge = pathway.get_pathway_badge()
+            if not Award.award_exists(user_id, pathway_badge.id):
+                Award.create_award(user_id,pathway_badge.id)
+            
+        
+        return award_list
     @staticmethod
     def get_user_awards(user_id):
         return Award.objects.filter(user=user_id,
@@ -217,14 +241,37 @@ class Award(BaseModel):
         award.save()
         
     @staticmethod
-    def create_award(user_id,badge_id):
+    def delete_award_by_external_id(external_id):
+        for award in Award.objects.filter(external_id=external_id, deleted=0):
+            award.deleted=1
+            award.save()
+        
+        for evidence in Evidence.objects.filter(deleted=0, award=award):
+            evidence.deleted=1
+            evidence.save()
+        
+    @staticmethod
+    def create_award(user_id,badge_id, comments=""):
         badge= Badge.objects.get(pk=badge_id)
-        award = Award(badge=badge,user_id=user_id,points=badge.points)
+        award = Award(badge=badge,user_id=user_id,points=badge.points, comments=comments)
         award.save()
         
         PointsBalance.increase_balance(user_id, badge.points)
         
         return award
+    
+class Evidence(BaseModel):      
+    award = models.ForeignKey(Award)  
+    file = models.FileField(upload_to='files/awards/evidence')  
+    hyperlink = models.TextField(blank=True,null=True)
+    name =  models.CharField(max_length=256)
+    
+    @staticmethod
+    def create_evidence(award_id, fileObj, hyperlink, name):
+        e = Evidence(award_id=award_id, hyperlink=hyperlink, name=name)
+        if fileObj:
+            e.file = fileObj
+        return e.save()
     
 class PathwayCategory(BaseModel):
     name =  models.CharField(max_length=256)
@@ -256,10 +303,16 @@ class Pathway(BaseModel):
         for pathway in Pathway.get_user_pathways(user_id):
             pathway_badge_list = Award.get_awards_in_badge_list(user_id, Pathway.get_related_badge_list(pathway.id))
             total_points = 0
+            award_total = 0
+            badgeMap = {}
             for award in pathway_badge_list:
                 total_points += award.points
+                badgeMap[award.badge_id] = True
             
-            award_total = len(pathway_badge_list)
+            award_total = len(badgeMap)
+            # award_total = 0
+            
+            
             total_badges = pathway.get_num_badges()
             if total_badges:
                 percent_complete = int((float(award_total) / float(total_badges)) * 100.0)
