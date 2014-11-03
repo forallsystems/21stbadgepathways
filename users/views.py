@@ -8,7 +8,65 @@ from django.db.models import Count
 from users.models import *
 from organizations.models import *
 from users.forms import *
+from social.apps.django_app.default.models import *
 
+@login_required
+def edit_myaccount_info(request):
+    user = request.user
+    if request.method == 'POST': 
+        form = AccountForm(request.POST)
+        if form.is_valid(): 
+            
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.username = form.cleaned_data['username']
+            user.email = form.cleaned_data['email']
+            
+            
+            if form.cleaned_data['new_password']:
+                user.set_password(form.cleaned_data['new_password'])
+                
+            user.save()
+ 
+            return HttpResponseRedirect('/dashboard/')
+    else:
+        
+        form = AccountForm(initial={'first_name':user.first_name,
+                                       'last_name':user.last_name,
+                                       'username':user.username,
+                                       'original_username':user.username,
+                                       'email':user.email,
+                                       'original_email':user.email,
+                                       'id':user.id
+                                       }) 
+    
+    #see if they are linked to google
+    hasGoogleLink = False
+    hasPersonaLink = False
+    googleUsername = ''
+    personaUsername = ''
+    
+    for sa in UserSocialAuth.objects.filter(user=user, provider='google-oauth2'):
+        hasGoogleLink = sa.id
+        googleUsername = sa.uid
+        
+    for sa in UserSocialAuth.objects.filter(user=user, provider='persona'):
+        hasPersonaLink = sa.id
+        personaUsername = sa.uid
+    
+    return render(request,'myAccountInfo.html', {
+        'form': form,
+        'hasGoogleLink':hasGoogleLink,
+        'hasPersonaLink':hasPersonaLink,
+        'googleUsername':googleUsername,
+        'personaUsername':personaUsername
+        
+    }) 
+    
+def authError(request):
+     return render(request,'socialAuthError.html', {})
+    
+    
 @login_required
 def edit_myaccount(request):
     user = request.user
@@ -42,6 +100,88 @@ def edit_myaccount(request):
     return render(request,'myAccount.html', {
         'form': form,
     }) 
+    
+    
+@login_required
+def list_schooladmins(request):
+    schooladmin_list = []
+    school_filter = _setup_school_filter(request)
+    if school_filter['selected_school_id']:
+        for user in Organization.get_schooladmins(school_filter['selected_school_id']):
+            schooladmin_list.append({'id':user.get_profile().id,
+                                     'name':user.get_full_name(),
+                                     'email':user.email})
+                              
+    return render(request,"admin/manageSchoolAdmins.html", 
+                              {'school_list':school_filter['school_list'],
+                               'selected_school_id':school_filter['selected_school_id'],
+                               'schooladmin_list':(schooladmin_list)}) 
+    
+@login_required
+def add_schooladmin(request, school_id):
+    if request.method == 'POST': 
+        form = AccountForm(request.POST)
+            
+        if form.is_valid(): 
+            user = User.objects.create_user(form.cleaned_data['username'], form.cleaned_data['email'],form.cleaned_data['new_password'])
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.save()
+            user.groups.add(Role.SCHOOLADMIN)
+            
+            user_to_org = Organization_User(user=user,
+                                            organization_id=school_id)
+            user_to_org.save()
+
+            return HttpResponseRedirect('/schooladmins/?schoolid='+school_id)
+    else:
+        form = AccountForm(initial={}) 
+
+    return render(request,'admin/addEditSchoolAdmin.html', {
+        'form': form,
+    }) 
+    
+@login_required
+def edit_schooladmin(request, userprofile_id):
+    if request.method == 'POST': 
+        form = AccountForm(request.POST)
+            
+        if form.is_valid(): 
+            user = User.objects.get(pk=form.cleaned_data['id'])
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.username = form.cleaned_data['username']
+            user.email = form.cleaned_data['email']
+            user.save()
+            
+            if form.cleaned_data['new_password']:
+                user.set_password(form.cleaned_data['new_password'])
+            
+            return HttpResponseRedirect('/schooladmins/')
+    else:
+        up = UserProfile.objects.get(pk=userprofile_id)
+        form = AccountForm(initial={'first_name':up.user.first_name,
+                                           'last_name':up.user.last_name,
+                                           'username':up.user.username,
+                                           'original_username':up.user.username,
+                                           'email':up.user.email,
+                                           'original_email':up.user.email,
+                                           'id':up.user.id}) 
+
+    return render(request,'admin/addEditSchoolAdmin.html', {
+        'form': form,
+    }) 
+    
+@login_required
+def delete_schooladmin(request, userprofile_id):
+    up = UserProfile.objects.get(pk=userprofile_id)
+    up.user.is_active = 0
+    up.user.save()
+    
+    Organization.remove_user(up.user_id)
+    
+    return HttpResponseRedirect('/schooladmins/')
+    
 
 @login_required
 def list_districtadmins(request):
@@ -131,7 +271,6 @@ def list_students(request):
     user_awards = User.objects.annotate(award_num=Count('award__badge',distinct=True)).filter(award__deleted=0, organization_user__organization=school_filter['selected_school_id'])
     for ua in user_awards:
         userAwardMap[ua.id] = ua.award_num
-    print len(userAwardMap)
     
     if school_filter['selected_school_id']:
         for student_profile in Organization.get_students(school_filter['selected_school_id']):
