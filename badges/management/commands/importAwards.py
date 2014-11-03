@@ -1,7 +1,6 @@
 from django.core.management.base import NoArgsCommand
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template import loader, Context
-from django.views.generic.simple import direct_to_template
 from django.conf import settings
 import csv
 from datetime import datetime
