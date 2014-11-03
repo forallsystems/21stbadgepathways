@@ -6,6 +6,8 @@ from django.db.models.signals import post_save
 from datetime import date
 from django.db.models import Q
 
+
+
 class UserProfile(BaseModel):
     user = models.OneToOneField(User)
     phone_number = models.CharField(max_length=256)
@@ -36,6 +38,7 @@ class StudentProfile(BaseModel):
     parent_email = models.EmailField(max_length=256,blank=True)
     birth_date = models.DateField(blank=True,null=True)
     gradelevel = models.ForeignKey(GradeLevel, blank=True, null=True)
+    external_id = models.CharField(max_length=256, blank=True, null=True)
     
     def get_age(self):
         if self.birth_date:
@@ -117,6 +120,21 @@ class Role(Group):
     
     class Meta:
         proxy = True    
+        
+class LogInHistory(BaseModel):
+    user = models.ForeignKey(User)
+    date = models.DateTimeField(blank=True,null=True)
+    ip = models.CharField(max_length=15)
+   
+    @staticmethod
+    def getLastLoginDate(user_id):
+        try:
+            rec = LogInHistory.objects.only('date').filter(user=user_id, deleted=0).order_by('-date')[0]
+           
+            return rec.date.strftime('%m/%d/%Y')
+           
+        except:
+            return 'N/A'
         
         
 def create_user_profile(sender, instance, created, **kwargs):
