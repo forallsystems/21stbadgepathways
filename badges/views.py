@@ -352,20 +352,30 @@ def pathway_summary(request):
     
     data_set = {}
     if school_filter['selected_school_id']:
-        student_list = []
-        
-        org_students = []    
-        if not len(school_filter['selected_school_id']) < 32: #ugly hack for now
-           org_students = Organization.get_students(school_filter['selected_school_id'])
-        else:
-           org_students = Organization.get_students_by_orgtype(school_filter['selected_school_id'])
-        
-        for user in org_students:
-            student_list.append(user.user_id)
-            
-        for pu in Pathway_User.objects.filter(user__in=student_list,
+        pu_results = None
+        if not len(school_filter['selected_school_id']) < 32:
+            pu_results = Pathway_User.objects.only('pathway__id','pathway__name').filter(user__organization__id=school_filter['selected_school_id'], 
+                                              user__organization__deleted=0,
+                                              user__groups__id=1,
+                                              user__is_active=1,
                                               pathway__deleted=0,
-                                              deleted=0):
+                                              deleted=0)
+        else:
+            if school_filter['selected_school_id'] == 'All':
+                pu_results = Pathway_User.objects.only('pathway__id','pathway__name').filter( user__organization__deleted=0,
+                                             user__groups__id=1,
+                                             user__is_active=1,
+                                             pathway__deleted=0,
+                                             deleted=0)
+            else:
+                pu_results = Pathway_User.objects.only('pathway__id','pathway__name').filter( user__organization__type_label=school_filter['selected_school_id'], 
+                                             user__organization__deleted=0,
+                                             user__groups__id=1,
+                                             user__is_active=1,
+                                             pathway__deleted=0,
+                                             deleted=0)
+                
+        for pu in pu_results:
             if pu.pathway_id not in data_set:
                 data_set[pu.pathway_id] = {'id':pu.pathway_id,
                                            'name':pu.pathway.name,
@@ -382,42 +392,77 @@ def pathway_summary(request):
 def pathway_badge_completion(request):
     #Get available schools
     school_filter = _setup_school_filter(request, with_all_types=True)
-    pathway_filter = _setup_school_pathway_filter(request, school_filter['selected_school_id'])
+    #pathway_filter = _setup_school_pathway_filter(request, school_filter['selected_school_id'])
+    pathway_list = []
+    selected_pathway_id = _get_filter_value('pathway_id', request)
     
+    student_id_list = []
+    
+    org_students = []    
+    if not len(school_filter['selected_school_id']) < 32: #ugly hack for now
+       org_students = Organization.get_students(school_filter['selected_school_id'])
+    else:
+       org_students = Organization.get_students_by_orgtype(school_filter['selected_school_id'])
+    
+        
+    for user in org_students:
+        student_id_list.append(user.user_id)
+    
+    
+    pathwayMap = {}    
+    
+    for pu in Pathway_User.objects.only('pathway__id','pathway__name').filter(user__in=student_id_list,
+                                          pathway__deleted=0,
+                                          deleted=0):
+        if pu.pathway_id not in pathwayMap:
+            pathwayMap[pu.pathway.id] = True
+            pathway_list.append({'id':pu.pathway.id,'name':pu.pathway.__unicode__()})
+    
+    #Default to first pathway in list    
+    if selected_pathway_id == 0:
+        if(len(pathway_list)):
+            selected_pathway_id = pathway_list[0]['id']
+            request.session['SELECTED_pathway_id'] = selected_pathway_id
+        else:
+            pathway_list.append({'id':0,'name':'No pathways found.'})  
+
     student_list = [] 
     badge_list = []
     
-    if pathway_filter['selected_pathway_id']:
-        for pb in Pathway.get_related_badges(pathway_filter['selected_pathway_id']):
+    if selected_pathway_id:
+        for pb in Pathway.get_related_badges(selected_pathway_id):
             badge_list.append({'id':pb.badge_id,
                                'name':pb.badge.name})
-            
-        org_students = []    
-        if not len(school_filter['selected_school_id']) < 32: #ugly hack for now
-           org_students = Organization.get_students(school_filter['selected_school_id'])
-        else:
-           org_students = Organization.get_students_by_orgtype(school_filter['selected_school_id'])
+        
+        default_awards = {}
+        for badge in badge_list:
+            default_awards[badge['id']] = " "    
+        
+        award_map = {}
+        for award in Award.objects.only('id','date_created','user__id','badge__id').filter(deleted=0,user__in=student_id_list):
+            if award.user_id not in award_map:
+                award_map[award.user_id] = default_awards.copy()
+            award_map[award.user_id][award.badge_id] = award.date_created.strftime('%m/%d/%Y')
         
         for user in org_students:
             student_profile = user
             user = user.user
-            awards = {}
-            for award in Award.get_user_awards_by_pathway(user.id, pathway_filter['selected_pathway_id']):
-                awards[award.badge_id] = award.date_created.strftime('%m/%d/%Y')
+            awards = default_awards
+            if user.id in award_map:
+                awards = award_map[user.id]
+         
             if len(awards):
-                #student_profile = user.get_profile().get_student_profile()
                 student_list.append({'id':student_profile.id,
                                      'name':user.get_full_name(),
                                      'identifier':student_profile.identifier,
                                      'gradelevel':student_profile.gradelevel.short_name(),
-                                     'email':user.email,
                                      'award_map':awards})
     
     return render(request,"reports/pathwayBadgeCompletion.html", 
                               {'school_list':school_filter['school_list'],
                                'selected_school_id':school_filter['selected_school_id'],
-                               'pathway_list':pathway_filter['pathway_list'],
-                               'selected_pathway_id':pathway_filter['selected_pathway_id'],
+                               'pathway_list':pathway_list,
+                               'selected_pathway_id':selected_pathway_id,
                                'badge_list':badge_list,
                                'student_list':student_list}) 
     
@@ -425,80 +470,60 @@ def pathway_badge_completion(request):
 def badge_completion(request):
     #Get available schools
     school_filter = _setup_school_filter(request, with_all_types=True)
-    
-    
+
     student_list = [] 
+    student_id_list = []
     badge_list = []
     
     if school_filter['selected_school_id']:
         for b in Badge.get_badges():
             badge_list.append({'id':b.id,
                                'name':b.name})
+            
+        default_awards = {}
+        for badge in badge_list:
+            default_awards[badge['id']] = " "
      
         org_students = []
         if not len(school_filter['selected_school_id']) < 32: #ugly hack for now
-            org_students = Organization.get_students(school_filter['selected_school_id'])
+           org_students = Organization.get_students(school_filter['selected_school_id'])
         else:
            org_students = Organization.get_students_by_orgtype(school_filter['selected_school_id'])
+           
+        for user in org_students:
+            student_id_list.append(user.user_id)
+           
+        award_map = {}
+        for award in Award.objects.only('id','date_created','user__id','badge__id').filter(deleted=0,user__in=student_id_list):
+            if award.user_id not in award_map:
+                award_map[award.user_id] = default_awards.copy()
+               
+            award_map[award.user_id][award.badge_id] = award.date_created.strftime('%m/%d/%Y')
         
         for user in org_students:
             student_profile = user
             user = user.user
-            awards = {}
-            for award in Award.get_user_awards(user.id):
-                awards[award.badge_id] = award.date_created.strftime('%m/%d/%Y')
+            awards = default_awards
+            if user.id in award_map:
+                awards = award_map[user.id]
+            
+            gradelevel_name = ''
+            if student_profile.gradelevel:
+            	gradelevel_name = student_profile.gradelevel.short_name()
       
             student_list.append({'id':student_profile.id,
                                  'name':user.get_full_name(),
                                  'identifier':student_profile.identifier,
-                                 'gradelevel':student_profile.gradelevel.short_name(),
+                                 'gradelevel':gradelevel_name,
                                  'email':user.email,
                                  'award_map':awards})
     
     return render(request,"reports/badgeCompletion.html", 
                               {'school_list':school_filter['school_list'],
                                'selected_school_id':school_filter['selected_school_id'],
-                               
                                'badge_list':badge_list,
                                'student_list':student_list}) 
-        
-def _setup_school_pathway_filter(request, school_id):
-    pathway_list = []
-    selected_pathway_id = _get_filter_value('pathway_id', request)
-    
-    student_list = []
-    
-    org_students = []    
-    if not len(school_id) < 32: #ugly hack for now
-       org_students = Organization.get_students(school_id)
-    else:
-       org_students = Organization.get_students_by_orgtype(school_id)
-    
-        
-    for user in org_students:
-        student_list.append(user.user_id)
-    
-    pathwayMap = {}    
-    for pu in Pathway_User.objects.filter(user__in=student_list,
-                                          pathway__deleted=0,
-                                          deleted=0):
-        if pu.pathway_id not in pathwayMap:
-            pathwayMap[pu.pathway.id] = True
-            pathway_list.append({'id':pu.pathway.id,'name':pu.pathway.__unicode__()})
    
-    #Default to first pathway in list    
-    
-    if selected_pathway_id == 0:
-        if(len(pathway_list)):
-            selected_pathway_id = pathway_list[0]['id']
-            request.session['SELECTED_pathway_id'] = selected_pathway_id
-        else:
-            pathway_list.append({'id':0,'name':'No pathways found.'})  
-            
-    return {'pathway_list':pathway_list,
-            'selected_pathway_id':selected_pathway_id}
-
-  
 
 def _setup_student_filter(request):
     student_list = []
@@ -569,7 +594,8 @@ def _setup_school_filter(request, with_all_types=False):
             
     if with_all_types:
         for key,value in type_list.items():
-            school_list.append({'id':key,'name':'All '+key+' Schools'})
+            school_list.insert(0,{'id':key,'name':'All '+key+' Schools'})
+        #school_list.insert(0,{'id':'All','name':'All Schools'})
             
     return {'school_list':school_list,
             'selected_school_id':selected_school_id}
@@ -692,11 +718,11 @@ def update_my_pathways_sort(request):
     return HttpResponse(simplejson.dumps([]),mimetype='application/json')
     
 @login_required
-def add_pathway(request, pathway_id):
+def add_my_pathway(request, pathway_id):
      Pathway.add_user_pathway(request.user.id, pathway_id)
      return HttpResponseRedirect('/my_pathways/')
  
 @login_required
-def delete_pathway(request, pathway_id):
+def delete_my_pathway(request, pathway_id):
      Pathway.delete_user_pathway(request.user.id, pathway_id)
      return HttpResponseRedirect('/my_pathways/')
