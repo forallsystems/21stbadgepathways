@@ -75,40 +75,46 @@ def delete_vendor(request, vendor_id):
 
 @login_required
 def list_items(request):
-    vendor_filter = _setup_vendor_filter(request)
+    school_filter = _setup_school_filter(request)
     
     item_list = []
     
-    if vendor_filter['selected_vendor_id']:
-        for item in Item.get_items(vendor_filter['selected_vendor_id']):
+    if school_filter['selected_school_id']:
+        for item in Item.get_items_in_school(school_filter['selected_school_id']):
             item_list.append({'id':item.id,
                                  'name':item.name,
                                  'description':item.description,
                                  'points':item.points,
-                                 'inventory':item.inventory})
+                                 'inventory':item.inventory,
+                                 'image_url':item.image_url()})
                               
     return render(request,"admin/manageItems.html", 
-                              {'vendor_list':vendor_filter['vendor_list'],
-                               'selected_vendor_id':vendor_filter['selected_vendor_id'],
+                              {'school_list':school_filter['school_list'],
+                               'selected_school_id':school_filter['selected_school_id'],
                                'item_list':(item_list)})   
     
 @login_required
-def add_item(request, vendor_id):
+def add_item(request, school_id):
     if request.method == 'POST': 
         form = ItemForm(request.POST)
             
         if form.is_valid(): 
-            Item.create_item(vendor_id,
+            image = None
+            if 'image' in request.FILES:
+                image = request.FILES['image']
+                
+            Item.create_item(None,
                              form.cleaned_data['name'],
                              form.cleaned_data['description'],
                              form.cleaned_data['points'],
                              form.cleaned_data['inventory'],
-                             form.cleaned_data['organization'])
+                             image,
+                             [school_id])
             
             
             return HttpResponseRedirect('/vendors/items/')
     else:
-        form = ItemForm(initial={'district_id':request.session['USER_ORGANIZATION_ID']}) 
+        form = ItemForm() 
 
     return render(request,'admin/addEditItem.html', {
         'form': form,
@@ -121,12 +127,16 @@ def edit_item(request, item_id):
         form = ItemForm(request.POST)
             
         if form.is_valid(): 
-            
+            image = None
+            if 'image' in request.FILES:
+                image = request.FILES['image']
+                
             i.update_item(form.cleaned_data['name'],
                              form.cleaned_data['description'],
                              form.cleaned_data['points'],
                              form.cleaned_data['inventory'],
-                             form.cleaned_data['organization'])
+                             image,
+                             [])
             
             i.save()
             
@@ -162,17 +172,52 @@ def order_history(request):
                           'name':item.name,
                           'points':item.points,
                           'inventory':item.inventory,
-                          'vendor_name':item.vendor.name,
-                          'vendor_image_url':item.vendor.image_url()})
+                          'vendor_name':'',#item.vendor.name,
+                          'vendor_image_url':item.image_url()})
         
         order_list.append({'id':order.id,
                            'date_created':order.date_created.strftime("%m/%d/%Y"),
                            'item_list':item_list,
-                           'order_total':order.order_total()})
+                           'order_total':order.order_total(),
+                           'is_processed':order.is_processed})
     
     return render(request,"order_history.html", 
                               {'order_list':order_list,
                                }) 
+    
+
+@login_required
+def list_orders(request):
+    order_list = []
+    
+    for order in Order.get_all_orders(request.session['USER_ORGANIZATION_ID']):
+        item_list = []
+        for oi in order.get_items():
+            item = oi.item
+            item_list.append({'id':item.id,
+                          'name':item.name,
+                          'points':item.points,
+                          'inventory':item.inventory,
+                          
+                          'image_url':item.image_url()})
+        
+        order_list.append({'id':order.id,
+                           'date_created':order.date_created.strftime("%Y-%m-%d"),
+                           'item_list':item_list,
+                           'order_total':order.order_total(),
+                           'student_name':order.user.get_full_name(),
+                           'student_id':order.user.get_profile().get_student_profile().identifier,
+                           'is_processed':order.is_processed})
+    
+    return render(request,"admin/manageOrders.html", 
+                              {'order_list':order_list,
+                               })     
+
+@login_required
+def process_order(request, order_id):
+    Order.process_order(order_id)
+    return HttpResponseRedirect('/orders/')
+
 @login_required
 def redeem(request):
     points_balance = PointsBalance.get_user_points_balance(request.user.id)
@@ -182,13 +227,13 @@ def redeem(request):
         cart_total+=v['points']
     
     item_list = []
-    for item in Item.get_available_items(request.session['USER_ORGANIZATION_ID']):
+    for item in Item.get_items_in_school(request.session['USER_ORGANIZATION_ID']):
         item_list.append({'id':item.id,
                           'name':item.name,
                           'points':item.points,
                           'inventory':item.inventory,
-                          'vendor_name':item.vendor.name,
-                          'vendor_image_url':item.vendor.image_url()})
+                          #'vendor_name':item.vendor.name,
+                          'vendor_image_url':item.image_url()})
     
     return render(request,"redeem.html", 
                               {'item_list':item_list,
@@ -213,7 +258,7 @@ def add_to_cart(request, item_id):
     item = Item.objects.get(pk=item_id)
     cart[item_id] = {'id':item.id,
                       'name':item.name,
-                      'vendor_name':item.vendor.name,
+                      'vendor_name':'',#item.vendor.name,
                       'points':item.points}
     
     
@@ -239,10 +284,10 @@ def point_redemptions(request):
         for sp in Organization.get_students(school_filter['selected_school_id']):
             student_list.append(sp.user.id)
             
-        for oi in Order_Item.objects.filter(order__user__in=student_list, deleted=0, order__deleted=0):
+        for oi in Order_Item.objects.filter(order__user__in=student_list, item__deleted=0, deleted=0, order__deleted=0):
             if oi.item_id not in data_set:
                 data_set[oi.item_id] = {'name':oi.item.name,
-                                       'vendor_name':oi.item.vendor.name,
+                                       'vendor_name':'',#oi.item.vendor.name,
                                        'points':oi.item.points,
                                        'redemptions':0,
                                        'totalPointsSpent':0}
@@ -267,7 +312,37 @@ def _get_cart(request):
 def _save_cart(request, cart):
     request.session['CART'] = cart
     
+def _setup_school_filter(request, with_all_types=False):
+    school_list = []
+    type_list = {}
+    selected_school_id = _get_filter_value('school_id', request)
     
+    if(request.session['USER_ORGANIZATION_TYPE'] == Organization.TYPE_SCHOOL):
+        school_list.append({'id':request.session['USER_ORGANIZATION_ID'],
+                           'name':request.session['USER_ORGANIZATION_NAME']})
+    else:
+        results = Organization.get_schools(request.session['USER_ORGANIZATION_ID'])
+                                    
+        for obj in results:
+            if obj.type_label and obj.type_label not in type_list: 
+                type_list[obj.type_label] = True
+            school_list.append({'id':obj.id,'name':obj.__unicode__()})
+   
+    #Default to first school in list    
+    if selected_school_id == 0 or (selected_school_id == -1 and not with_all_types):
+        if(len(school_list)):
+            selected_school_id = school_list[0]['id']
+            request.session['SELECTED_school_id'] = selected_school_id
+        else:
+            school_list.append({'id':0,'name':'No schools created.'})  
+            
+    if with_all_types:
+        for key,value in type_list.items():
+            school_list.insert(0,{'id':key,'name':'All '+key+' Schools'})
+        #school_list.insert(0,{'id':'All','name':'All Schools'})
+            
+    return {'school_list':school_list,
+            'selected_school_id':selected_school_id}    
 
 def _setup_vendor_filter(request):
     vendor_list = []

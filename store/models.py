@@ -29,7 +29,7 @@ class PointsBalance(BaseModel):
             pb.points += points
             pb.save()
 
-    
+   
 class Vendor(BaseModel):
     name = models.CharField(max_length=256)
     image = models.FileField(blank=True,null=True,upload_to='files/order/vendor')
@@ -65,8 +65,9 @@ class Vendor(BaseModel):
     
     
 class Item(BaseModel):
-    vendor = models.ForeignKey(Vendor)
+    vendor = models.ForeignKey(Vendor,blank=True,null=True)
     name = models.CharField(max_length=256)
+   
     description = models.TextField()
     points = models.IntegerField(default=0)
     inventory = models.IntegerField(default=0)
@@ -78,17 +79,23 @@ class Item(BaseModel):
         return Item.objects.filter(deleted=0, vendor=vendor_id).order_by('name')
     
     @staticmethod
+    def get_items_in_school(school_id):
+        return Item.objects.filter(deleted=0, item_organization__organization=school_id,item_organization__deleted=0).order_by('name')
+    
+    @staticmethod
     def get_available_items(organization_id):
         return Item.objects.filter(deleted=0, 
+                                   vendor__deleted=0,
                                    item_organization__organization_id=organization_id, 
                                    item_organization__deleted=0).order_by('vendor')
     
     @staticmethod
-    def create_item(vendor_id,name,description,points,inventory,organization_list):
+    def create_item(vendor_id,name,description,points,inventory,image,organization_list):
         i = Item(vendor_id=vendor_id, 
                  name=name,
                  description=description,
                  points=points,
+                 image=image,
                  inventory=inventory)
         i.save()
         
@@ -104,25 +111,34 @@ class Item(BaseModel):
         i.deleted=1
         i.save()
     
-    def update_item(self, name,description,points,inventory,organization_list):
+    def update_item(self, name,description,points,inventory,image,organization_list):
         self.name = name
         self.description = description
         self.points= points
         self.inventory = inventory
+        if image:
+            self.image = image
         
-        for io in Item_Organization.objects.filter(item=self,deleted=0):
-            io.deleted=1
-            io.save()
+        if len(organization_list):
+            for io in Item_Organization.objects.filter(item=self,deleted=0):
+                io.deleted=1
+                io.save()
+            
+            for organization_id in organization_list:
+                io = Item_Organization(item=self, organization_id = organization_id)
+                io.save()
         
-        for organization_id in organization_list:
-            io = Item_Organization(item=self, organization_id = organization_id)
-            io.save()
-    
     def get_organization_list(self):
         org_list = {}
         for io in Item_Organization.objects.filter(item=self,deleted=0):
             org_list[io.organization_id] = io.organization.__unicode__()
         return org_list
+    
+    def image_url(self):
+        url = None
+        if(self.image):
+            url = self.image.url
+        return url
     
     def __unicode__(self):
         return self.name
@@ -135,10 +151,16 @@ class Item_Organization(BaseModel):
 class Order(BaseModel):
     user = models.ForeignKey(User)
     items = models.ManyToManyField(Item, through='Order_Item')
+    is_processed = models.BooleanField(default=False)
     
     @staticmethod
     def get_orders(user_id):
         return Order.objects.filter(user=user_id, deleted=0).order_by('-date_created')
+    
+    @staticmethod
+    def get_all_orders(school_id):
+        return Order.objects.filter(deleted=0,user__organization__id=school_id, 
+                                             user__organization__deleted=0,).order_by('-date_created')
     
     @staticmethod
     def create_order(user_id, cart):
@@ -147,6 +169,12 @@ class Order(BaseModel):
         
         for k,v in cart:
             order.add_item(user_id, v['id'], v['points'])
+            
+    @staticmethod
+    def process_order(order_id):
+        order = Order.objects.get(pk=order_id)
+        order.is_processed = True
+        order.save()
         
     def add_item(self, user_id, item_id, points):
         i = Item.objects.get(pk=item_id)
