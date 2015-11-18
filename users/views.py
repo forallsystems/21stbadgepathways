@@ -152,11 +152,11 @@ def edit_schooladmin(request, userprofile_id):
             user.last_name = form.cleaned_data['last_name']
             user.username = form.cleaned_data['username']
             user.email = form.cleaned_data['email']
-            user.save()
+            
             
             if form.cleaned_data['new_password']:
                 user.set_password(form.cleaned_data['new_password'])
-            
+            user.save()
             return HttpResponseRedirect('/schooladmins/')
     else:
         up = UserProfile.objects.get(pk=userprofile_id)
@@ -268,12 +268,20 @@ def list_students(request):
     student_list = []
     
     userAwardMap = {}
-    user_awards = User.objects.annotate(award_num=Count('award__badge',distinct=True)).filter(award__deleted=0, organization_user__organization=school_filter['selected_school_id'])
-    for ua in user_awards:
-        userAwardMap[ua.id] = ua.award_num
+    
     
     if school_filter['selected_school_id']:
-        for student_profile in Organization.get_students(school_filter['selected_school_id']):
+        
+        studentResults = Organization.get_students(school_filter['selected_school_id'])
+        studentIDList = []
+        for student_profile in studentResults:
+            studentIDList.append(student_profile.user.id)
+            
+        user_awards = User.objects.annotate(award_num=Count('award__id',distinct=True)).filter(award__deleted=0, id__in=studentIDList)
+        for ua in user_awards:
+            userAwardMap[ua.id] = ua.award_num
+        
+        for student_profile in studentResults:
             num_awards = 0
             if student_profile.user.id in userAwardMap:
                 num_awards = userAwardMap[student_profile.user.id]
