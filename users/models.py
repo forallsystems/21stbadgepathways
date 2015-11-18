@@ -56,8 +56,11 @@ class StudentProfile(BaseModel):
         return 0
     
     @staticmethod
-    def find_student(student_id,username):
-        sp_results = StudentProfile.objects.filter(Q(deleted=0),Q(identifier=student_id)|Q(user__username=username))
+    def find_student(student_id,username,email):
+        if email:
+            sp_results = StudentProfile.objects.filter(Q(deleted=0),Q(identifier=student_id)|Q(user__username=username)|Q(user__email=email))
+        else:
+            sp_results = StudentProfile.objects.filter(Q(deleted=0),Q(identifier=student_id)|Q(user__username=username))
         
         for sp in sp_results:
             return sp.user
