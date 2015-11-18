@@ -30,10 +30,12 @@ class Organization(MPTTModel, BaseModel):
         self.save()
     
     @staticmethod
-    def create_organization(parent_id, name, type, type_label):
+    def create_organization(parent_id, name, type, type_label,enable_store=0,organization_id=''):
         org = Organization(name=name,
                            type=type,
                            type_label=type_label,
+                           enable_store=enable_store,
+                           organization_id=organization_id,
                            parent_id=parent_id)
         org.save()
         return org
