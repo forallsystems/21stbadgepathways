@@ -28,6 +28,29 @@ def list_schools(request):
                               {'school_list':(school_list)}) 
     
 @login_required
+def add_school(request):
+    if request.method == 'POST': 
+        form = SchoolForm(request.POST)
+            
+        if form.is_valid(): 
+            
+            
+            Organization.create_organization(request.session['USER_ORGANIZATION_ID'], 
+                                             form.cleaned_data['name'], 
+                                             Organization.TYPE_SCHOOL, 
+                                             '',
+                                             form.cleaned_data['enable_store'],
+                                             form.cleaned_data['organization_id'])
+            
+            return HttpResponseRedirect('/schools/')
+    else:
+        form = SchoolForm() 
+
+    return render(request,'admin/addEditSchool.html', {
+        'form': form,
+    }) 
+    
+@login_required
 def edit_school(request, school_id):
     
     org = Organization.objects.get(pk=school_id)
