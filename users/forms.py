@@ -86,5 +86,9 @@ class StudentAccountForm(AccountForm):
         schoolList = []    
         for org in Organization.get_schools(parent_organization_id):
             schoolList.append((org.id,org.__unicode__()))
+        
+        if not len(schoolList):
+            org = Organization.objects.get(pk=parent_organization_id)
+            schoolList.append((parent_organization_id,org.__unicode__()))
             
         self.fields['organization'].choices =  schoolList
