@@ -72,7 +72,14 @@ class Badge(BaseModel):
             return Badge.objects.filter(deleted=0,is_active=1).exclude(identifier__exact='').order_by('name')
     
     @staticmethod
-    def create_badge(identifier,name,description,criteria,image,is_active,years_valid,weight,points,allow_send_obi,gradelevels):
+    def get_badges_by_user(user_id, include_inactive=False):
+        if include_inactive:
+            return Badge.objects.filter(deleted=0, created_by=user_id).exclude(identifier__exact='').order_by('name')
+        else:
+            return Badge.objects.filter(deleted=0,is_active=1, created_by=user_id).exclude(identifier__exact='').order_by('name')
+    
+    @staticmethod
+    def create_badge(identifier,name,description,criteria,image,is_active,years_valid,weight,points,allow_send_obi,gradelevels,user_id):
          b = Badge(system=System.get_default_system(),
                    identifier=identifier,
                    name=name,
@@ -83,7 +90,8 @@ class Badge(BaseModel):
                    years_valid=years_valid,
                    weight=weight,
                    points=points,
-                   allow_send_obi=allow_send_obi)
+                   allow_send_obi=allow_send_obi,
+                   created_by=user_id)
          b.save()
          
          for gradelevel in gradelevels:
@@ -126,7 +134,8 @@ class Badge(BaseModel):
                    years_valid=ob.years_valid,
                    weight=ob.weight,
                    points=ob.points,
-                   allow_send_obi=ob.allow_send_obi)
+                   allow_send_obi=ob.allow_send_obi,
+                   created_by=ob.created_by)
         b.save()
         
         for g in Badge_GradeLevel.objects.filter(badge=badge_id,deleted=0):
@@ -141,6 +150,9 @@ class Badge(BaseModel):
         b.deleted=1
         b.save()
         #TODO DELETE AWARDS!!!
+        
+        
+    
     
     def image_url(self):
         url = None
@@ -155,6 +167,16 @@ class Badge(BaseModel):
                 list+=", "
             list += bg.gradelevel.short_name()
         return list
+    
+    def get_lowest_grade(self):
+        for bg in Badge_GradeLevel.objects.filter(badge=self,deleted=0).order_by('gradelevel__sort_order'):
+            return bg.gradelevel.short_name()
+        return ""
+    
+    def get_highest_grade(self):
+        for bg in Badge_GradeLevel.objects.filter(badge=self,deleted=0).order_by('-gradelevel__sort_order'):
+            return bg.gradelevel.short_name()
+        return ""
     
     def get_gradelevel_list(self):
         list = {}
@@ -172,7 +194,17 @@ class Badge_GradeLevel(BaseModel):
     badge = models.ForeignKey(Badge)
     gradelevel = models.ForeignKey(GradeLevel)   
     
+    
 
+class BulkIssueQueue(BaseModel):   
+    file = models.FileField(blank=True,null=True,upload_to='files',max_length=255)
+    email =  models.CharField(max_length=256)
+    organization = models.ForeignKey(Organization)
+    
+    @staticmethod
+    def schedule_bulk_import(file, email, org_id, user_id):
+        bi = BulkIssueQueue(file=file,email=email,organization_id=org_id,created_by=user_id)
+        bi.save()
     
 class Award(BaseModel):
     badge = models.ForeignKey(Badge)
@@ -347,8 +379,7 @@ class Pathway(BaseModel):
         if organization_id:
             
             if exclude_list:
-                print organization_id
-                return Pathway.objects.filter(deleted=0).exclude(id__in=exclude_list).order_by('sort_order','name').distinct()
+                return Pathway.objects.filter(deleted=0, pathway_organization__organization=organization_id, pathway_organization__deleted=0).exclude(id__in=exclude_list).order_by('sort_order','name').distinct()
             else:
                 return Pathway.objects.filter(deleted=0).order_by('sort_order','name').distinct()
         else:
@@ -368,7 +399,7 @@ class Pathway(BaseModel):
         return pathway_list
     
     @staticmethod
-    def create_pathway(name,pathwaycategory,description,organization_list,badge_name,badge_description,badge_criteria,badge_image,badge_points):
+    def create_pathway(name,pathwaycategory,description,organization_list,badge_name,badge_description,badge_criteria,badge_image,badge_points,user_id):
         p = Pathway(name=name,
                     pathwaycategory=pathwaycategory,
                     description=description,
@@ -379,7 +410,7 @@ class Pathway(BaseModel):
             po = Pathway_Organization(pathway=p, organization_id = organization_id)
             po.save()
             
-        b = Badge.create_badge('', badge_name, badge_description, badge_criteria, badge_image, True, 99, 0, badge_points, False, [])
+        b = Badge.create_badge('', badge_name, badge_description, badge_criteria, badge_image, True, 99, 0, badge_points, False, [],user_id)
     
         pb = Pathway_Badge(pathway=p,
                            badge=b,
@@ -441,7 +472,18 @@ class Pathway(BaseModel):
         for pb in Pathway_Badge.objects.filter(pathway=self,is_pathway_badge=True,deleted=0):
             return pb.badge
         
-        return None
+        #Make a default one!
+        b = Badge.create_badge('', "Default", "Description goes here", "Criteria goes here", "", True, 99, 0, "0", False, [],self.created_by)
+    
+        pb = Pathway_Badge(pathway=self,
+                           badge=b,
+                           is_pathway_badge=True,
+                           sort_order=0)
+        pb.save()
+        
+        
+        
+        return b
     
     @staticmethod
     def get_num_pathways():
