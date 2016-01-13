@@ -8,6 +8,7 @@ from users.models import *
 from organizations.models import *
 from badges.models import *
 from badges.forms import *
+from django.template import loader, Context
 
 @login_required
 def list_pathways(request):
@@ -58,7 +59,8 @@ def add_pathway(request):
                                  form.cleaned_data['badge_description'],
                                  form.cleaned_data['badge_criteria'],
                                  badge_image,
-                                 form.cleaned_data['badge_points'])
+                                 form.cleaned_data['badge_points'],
+                                 request.user.id)
             
             
             return HttpResponseRedirect('/pathways/')
@@ -96,7 +98,7 @@ def edit_pathway(request, pathway_id):
             
             return HttpResponseRedirect('/pathways/')
     else:
-    
+        
         form = PathwayForm(initial={'name':p.name,
                                     'pathwaycategory':p.pathwaycategory,
                                    'description':p.description,
@@ -183,27 +185,70 @@ def update_pathway_badges_sort(request):
     return HttpResponse(simplejson.dumps([]),mimetype='application/json')
 
 @login_required
-def list_badges(request):
+def list_badges(request, dataOnly=False):
+    
+    user_role = request.session['USER_ROLE']
+    
     badge_list = []
-    for badge in Badge.get_badges(include_inactive=True):
+    if user_role == Role.DISTRICTADMIN:
+        badge_results = Badge.get_badges(include_inactive=True)
+    else:
+        badge_results = Badge.get_badges_by_user(request.user.id, include_inactive=True)
+        
+    for badge in badge_results:
         badge_list.append({'id':badge.id,
                            'identifier':badge.identifier,
                            'name':badge.name,
                            'image_url':badge.image_url(),
                            'grades':badge.assigned_grades()})
-        
-    return render(request,"admin/manageBadges.html", 
+    if dataOnly:
+        return {'badge_list':(badge_list)}
+    else:    
+        return render(request,"admin/manageBadges.html", 
                               {'badge_list':(badge_list)}) 
+    
+    
+@login_required
+def download_badges(request):
+    
+    badge_list = []
+    if request.session['USER_ROLE'] == Role.DISTRICTADMIN:
+        badge_results = Badge.get_badges(include_inactive=True)
+    else:
+        badge_results = Badge.get_badges_by_user(request.user.id, include_inactive=True)
+        
+    for badge in badge_results:
+        badge_list.append({'id':badge.id,
+                           'identifier':badge.identifier,
+                           'name':badge.name,
+                           'description':badge.description,
+                      
+                           'lowest_grade':badge.get_lowest_grade(),
+                           'highest_grade':badge.get_highest_grade(),
+                           'date_created':badge.date_created.strftime('%Y-%m-%d')})
+    
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=Badges.csv'
+    t = loader.get_template('admin/downloadBadgesTemplate.csv')
+    c = Context({'badge_list':(badge_list)})
+    response.write(t.render(c))
+    return response
+
     
 @login_required
 def add_badge(request):
     if request.method == 'POST': 
         form = BadgeForm(request.POST)
+       
         if form.is_valid(): 
+   
             image = None
             if 'image' in request.FILES:
                 image = request.FILES['image']
             
+            if not form.cleaned_data['points']:
+                form.cleaned_data['points'] = 0
+           
             Badge.create_badge(form.cleaned_data['identifier'],
                                form.cleaned_data['name'],
                                form.cleaned_data['description'],
@@ -214,7 +259,8 @@ def add_badge(request):
                                form.cleaned_data['weight'],
                                form.cleaned_data['points'],
                                form.cleaned_data['allow_send_obi'],
-                               form.cleaned_data['gradelevels'] )
+                               form.cleaned_data['gradelevels'],
+                               request.user.id)
             
             return HttpResponseRedirect('/badges/')
     else:
@@ -492,12 +538,12 @@ def badge_completion(request):
            
         for user in org_students:
             student_id_list.append(user.user_id)
-           
+
         award_map = {}
         for award in Award.objects.only('id','date_created','user__id','badge__id').filter(deleted=0,user__in=student_id_list):
             if award.user_id not in award_map:
                 award_map[award.user_id] = default_awards.copy()
-               
+       
             award_map[award.user_id][award.badge_id] = award.date_created.strftime('%m/%d/%Y')
         
         for user in org_students:
@@ -506,7 +552,7 @@ def badge_completion(request):
             awards = default_awards
             if user.id in award_map:
                 awards = award_map[user.id]
-            
+
             gradelevel_name = ''
             if student_profile.gradelevel:
             	gradelevel_name = student_profile.gradelevel.short_name()
@@ -517,7 +563,7 @@ def badge_completion(request):
                                  'gradelevel':gradelevel_name,
                                  'email':user.email,
                                  'award_map':awards})
-    
+
     return render(request,"reports/badgeCompletion.html", 
                               {'school_list':school_filter['school_list'],
                                'selected_school_id':school_filter['selected_school_id'],
@@ -726,3 +772,42 @@ def add_my_pathway(request, pathway_id):
 def delete_my_pathway(request, pathway_id):
      Pathway.delete_user_pathway(request.user.id, pathway_id)
      return HttpResponseRedirect('/my_pathways/')
+ 
+ 
+@login_required
+def bulk_issue(request):
+    if request.method == 'POST': 
+        form = BulkIssueForm(request.POST, request.FILES)
+        if form.is_valid(): 
+            file = None
+            if 'file' in request.FILES:
+                file = request.FILES['file']
+            
+            BulkIssueQueue.schedule_bulk_import(file,
+                               form.cleaned_data['email'],
+                               request.session['USER_ORGANIZATION_ID'],
+                               request.user.id)
+            
+            return HttpResponseRedirect('/badges/bulk_issue_complete/')
+    else:
+        form = BulkIssueForm(initial={}) 
+
+    return render(request,'admin/bulkIssue.html', {
+        'form': form,
+    }) 
+
+@login_required
+def bulk_issue_complete(request):
+    return render(request,'admin/bulkIssueComplete.html', {})
+
+@login_required
+def download_sample_bulk_file(request):
+    from django.template import loader, Context
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=SampleBadgeIssueImport.csv'
+    
+    t = loader.get_template('admin/Vendor_Badge_Import.csv')
+    c = Context()
+    response.write(t.render(c))
+    return response    
+    
