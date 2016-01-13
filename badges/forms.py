@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from bootstrap.forms import BootstrapForm, Fieldset
 from organizations.models import *
 from badges.models import *
-
+import os
 class PathwayForm(BootstrapForm):
     id = forms.CharField(required=False, widget=forms.HiddenInput)
     district_id = forms.CharField(required=True, widget=forms.HiddenInput)
@@ -37,7 +37,7 @@ class PathwayForm(BootstrapForm):
         
 class BadgeForm(BootstrapForm):
     id = forms.CharField(required=False, widget=forms.HiddenInput)
-    identifier = forms.CharField(max_length=256, label='CNUSD Badge ID')
+    identifier = forms.CharField(max_length=256, label='Badge ID')
     name = forms.CharField(max_length=256, label='Badge Name')
     description = forms.CharField(label='Badge Description', widget=forms.Textarea,required=False)
     criteria = forms.CharField(label='Badge Criteria', widget=forms.Textarea,required=False)
@@ -47,16 +47,32 @@ class BadgeForm(BootstrapForm):
     is_active = forms.BooleanField(label='Active', required=False)
     years_valid = forms.IntegerField(label='Years to Archive', min_value=0)
     weight = forms.IntegerField(label='Badge Weighting', min_value=0)
-    points = forms.IntegerField(label='Point Value', min_value=0)
+    points = forms.IntegerField(label='Point Value', min_value=0, required=False)
     allow_send_obi = forms.BooleanField(label='Allow Sending to the Mozilla Badge Backpack', required=False)
     
     gradelevels = forms.ModelMultipleChoiceField(queryset=GradeLevel.objects.filter(deleted=0).order_by('sort_order'), 
                                    label='Assigned Grade Level(s)',
-                                   help_text='<span style="font-size:.9em;">Hold Ctrl/Cmd to select multiple schools.</i></span>')
+                                   help_text='<span style="font-size:.9em;">Hold Ctrl/Cmd to select multiple grades.</i></span>')
 
 class AwardForm(BootstrapForm):
     id = forms.CharField(required=False, widget=forms.HiddenInput)
     badge = forms.ModelChoiceField(queryset=Badge.objects.filter(deleted=0).order_by('name'), 
                                    label='Badge')
+    
+class BulkIssueForm(BootstrapForm):
+    file  = forms.FileField(label='Upload CSV File', required=True)
+    email = forms.CharField(max_length=256, label='Notification Email Address')
+    
+    def clean(self):
+        
+        cleaned_data = super(BootstrapForm, self).clean()
+        file =  cleaned_data.get('file')
 
+        filename = file.name
+        ext = os.path.splitext(filename)[1]
+        ext = ext.lower()
+
+        if ext != '.csv':
+            raise forms.ValidationError("Only CSV files are supported.")
+        return cleaned_data
     
