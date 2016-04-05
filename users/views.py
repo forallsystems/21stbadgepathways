@@ -230,10 +230,12 @@ def edit_districtadmin(request, userprofile_id):
             user.last_name = form.cleaned_data['last_name']
             user.username = form.cleaned_data['username']
             user.email = form.cleaned_data['email']
-            user.save()
+            
             
             if form.cleaned_data['new_password']:
                 user.set_password(form.cleaned_data['new_password'])
+                
+            user.save()
             
             return HttpResponseRedirect('/districtadmins/')
     else:
@@ -378,6 +380,44 @@ def delete_student(request, studentprofile_id):
     Organization.remove_student(sp.user_id)
     
     return HttpResponseRedirect('/students/')
+
+
+@login_required
+def bulk_import_students(request):
+    if request.method == 'POST': 
+        form = BulkImportForm(request.POST, request.FILES)
+        if form.is_valid(): 
+            file = None
+            if 'file' in request.FILES:
+                file = request.FILES['file']
+            
+            BulkImportQueue.schedule_bulk_import(file,
+                               form.cleaned_data['email'],
+                               request.session['USER_ORGANIZATION_ID'],
+                               request.user.id)
+            
+            return HttpResponseRedirect('/students/bulk_import_complete/')
+    else:
+        form = BulkImportForm(initial={}) 
+
+    return render(request,'admin/bulkImportStudents.html', {
+        'form': form,
+    }) 
+
+@login_required
+def bulk_import_students_complete(request):
+    return render(request,'admin/bulkImportStudentsComplete.html', {})
+
+@login_required
+def download_sample_bulk_file(request):
+    from django.template import loader, Context
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=SampleBulkImport.csv'
+    
+    t = loader.get_template('admin/Student_Import.csv')
+    c = Context()
+    response.write(t.render(c))
+    return response    
 
 def _setup_school_filter(request):
     school_list = []

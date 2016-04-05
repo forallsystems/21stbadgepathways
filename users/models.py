@@ -6,7 +6,15 @@ from django.db.models.signals import post_save
 from datetime import date
 from django.db.models import Q
 
-
+class BulkImportQueue(BaseModel):   
+    file = models.FileField(blank=True,null=True,upload_to='files',max_length=255)
+    email =  models.CharField(max_length=256)
+    organization = models.ForeignKey(Organization)
+    
+    @staticmethod
+    def schedule_bulk_import(file, email, org_id, user_id):
+        bi = BulkImportQueue(file=file,email=email,organization_id=org_id,created_by=user_id)
+        bi.save()
 
 class UserProfile(BaseModel):
     user = models.OneToOneField(User)
