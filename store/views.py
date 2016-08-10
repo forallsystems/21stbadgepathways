@@ -78,6 +78,11 @@ def list_items(request):
     school_filter = _setup_school_filter(request)
     
     item_list = []
+    school_list = school_filter['school_list']
+    if(request.session['USER_ORGANIZATION_TYPE'] != Organization.TYPE_SCHOOL):
+        school_list.append({'id':request.session['USER_ORGANIZATION_ID'],
+                           'name':request.session['USER_ORGANIZATION_NAME']})
+
     
     if school_filter['selected_school_id']:
         for item in Item.get_items_in_school(school_filter['selected_school_id']):
@@ -89,7 +94,7 @@ def list_items(request):
                                  'image_url':item.image_url()})
                               
     return render(request,"admin/manageItems.html", 
-                              {'school_list':school_filter['school_list'],
+                              {'school_list':school_list,
                                'selected_school_id':school_filter['selected_school_id'],
                                'item_list':(item_list)})   
     
@@ -190,25 +195,34 @@ def order_history(request):
 def list_orders(request):
     order_list = []
     
-    for order in Order.get_all_orders(request.session['USER_ORGANIZATION_ID']):
-        item_list = []
-        for oi in order.get_items():
-            item = oi.item
-            item_list.append({'id':item.id,
-                          'name':item.name,
-                          'points':item.points,
-                          'inventory':item.inventory,
-                          
-                          'image_url':item.image_url()})
-        
-        order_list.append({'id':order.id,
-                           'date_created':order.date_created.strftime("%Y-%m-%d"),
-                           'item_list':item_list,
-                           'order_total':order.order_total(),
-                           'student_name':order.user.get_full_name(),
-                           'student_id':order.user.get_profile().get_student_profile().identifier,
-                           'is_processed':order.is_processed})
+    school_filter = _setup_school_filter(request)
+    school_list = school_filter['school_list']
+    if(request.session['USER_ORGANIZATION_TYPE'] != Organization.TYPE_SCHOOL):
+        school_list.append({'id':request.session['USER_ORGANIZATION_ID'],
+                           'name':request.session['USER_ORGANIZATION_NAME']})
+
+    for school in school_list:
     
+        for order in Order.get_all_orders(school['id']):
+            item_list = []
+            for oi in order.get_items():
+                item = oi.item
+                item_list.append({'id':item.id,
+                              'name':item.name,
+                              'points':item.points,
+                              'inventory':item.inventory,
+                              
+                              'image_url':item.image_url()})
+            
+            order_list.append({'id':order.id,
+                               'date_created':order.date_created.strftime("%Y-%m-%d"),
+                               'item_list':item_list,
+                               'order_total':order.order_total(),
+                               'school_name':school['name'],
+                               'student_name':order.user.get_full_name(),
+                               'student_id':order.user.get_profile().get_student_profile().identifier,
+                               'is_processed':order.is_processed})
+        
     return render(request,"admin/manageOrders.html", 
                               {'order_list':order_list,
                                })     
@@ -234,6 +248,16 @@ def redeem(request):
                           'inventory':item.inventory,
                           #'vendor_name':item.vendor.name,
                           'vendor_image_url':item.image_url()})
+        
+    org = Organization.get_user_organization(request.user.id)
+    for item in Item.get_items_in_school(org.parent_id):
+        item_list.append({'id':item.id,
+                          'name':item.name,
+                          'points':item.points,
+                          'inventory':item.inventory,
+                          #'vendor_name':item.vendor.name,
+                          'vendor_image_url':item.image_url()})
+    
     
     return render(request,"redeem.html", 
                               {'item_list':item_list,
