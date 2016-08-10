@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from bootstrap.forms import BootstrapForm, Fieldset
 from organizations.models import *
 from django.contrib.auth.forms import AuthenticationForm
+import os
 
 class AccountForm(BootstrapForm):
     id = forms.CharField(required=False, widget=forms.HiddenInput)
@@ -68,7 +69,7 @@ class AccountForm(BootstrapForm):
         return cleaned_data
 
 class StudentAccountForm(AccountForm):
-    identifier = forms.CharField(max_length=256, label='Student ID', required=True)
+    identifier = forms.CharField(max_length=256, label='ID', required=True)
     gradelevel = forms.ModelChoiceField(queryset=GradeLevel.objects.filter(deleted=0).order_by('sort_order'), 
                                    label='Grade Level')
     birth_date = forms.DateField(required=True, label='Birth Date')
@@ -92,3 +93,23 @@ class StudentAccountForm(AccountForm):
             schoolList.append((parent_organization_id,org.__unicode__()))
             
         self.fields['organization'].choices =  schoolList
+        
+class BulkImportForm(BootstrapForm):
+    file  = forms.FileField(label='Upload CSV File', required=True)
+    email = forms.CharField(max_length=256, label='Notification Email Address')
+    
+    def clean(self):
+        
+        cleaned_data = super(BootstrapForm, self).clean()
+        file =  cleaned_data.get('file')
+        if file:
+            filename = file.name
+            ext = os.path.splitext(filename)[1]
+            ext = ext.lower()
+    
+            if ext != '.csv':
+                raise forms.ValidationError("Only CSV files are supported.")
+        else:
+            raise forms.ValidationError("Please upload a CSV file.")
+        return cleaned_data
+    
