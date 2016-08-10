@@ -9,6 +9,7 @@ from organizations.models import *
 from badges.models import *
 from badges.forms import *
 from django.template import loader, Context
+from datetime import datetime
 
 @login_required
 def list_pathways(request):
@@ -206,7 +207,57 @@ def list_badges(request, dataOnly=False):
     else:    
         return render(request,"admin/manageBadges.html", 
                               {'badge_list':(badge_list)}) 
+        
+@login_required
+def generateClaimCodes(request, badge_id):
     
+    badge = Badge.objects.get(pk=badge_id)
+    count = int(request.GET.get('count',10))
+    
+    code_list = []
+    for i in range(0,count):
+        while True:
+            code = Claim._generateCode()
+            if Claim.objects.filter(code=code).count() == 0:
+                break
+        
+        claim = Claim(badge_id=badge_id,
+                      code=code)
+        claim.save()
+            
+        code_list.append(code) 
+        
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename='+badge.name+'_ClaimCodes.csv'
+    t = loader.get_template('admin/downloadClaimCodesTemplate.csv')
+    c = Context({'code_list':(code_list)})
+    response.write(t.render(c))
+    return response
+
+@login_required
+def claim_badge(request):
+    if request.method == 'POST': 
+        form = BadgeClaimForm(request.POST)
+       
+        if form.is_valid(): 
+            claim = Claim.objects.get(code=form.cleaned_data['code'])
+            
+            if not Award.award_exists(request.user.id, claim.badge_id) or claim.badge.allow_issue_mutiple:
+            
+                claim.last_claimed_date = datetime.now().strftime("%Y-%m-%d")
+                claim.save()
+                
+                Award.create_award(request.user.id,
+                           claim.badge_id)
+            
+            return HttpResponseRedirect('/my_badges/')
+    else:
+        form = BadgeClaimForm(initial={}) 
+
+    return render(request,'claim_badge.html', {
+        'form': form,
+    }) 
+
     
 @login_required
 def download_badges(request):
@@ -259,6 +310,7 @@ def add_badge(request):
                                form.cleaned_data['weight'],
                                form.cleaned_data['points'],
                                form.cleaned_data['allow_send_obi'],
+                               form.cleaned_data['allow_issue_mutiple'],
                                form.cleaned_data['gradelevels'],
                                request.user.id)
             
@@ -291,6 +343,7 @@ def edit_badge(request, badge_id):
                                form.cleaned_data['weight'],
                                form.cleaned_data['points'],
                                form.cleaned_data['allow_send_obi'],
+                               form.cleaned_data['allow_issue_mutiple'],
                                form.cleaned_data['gradelevels'] )
             b.save()
             
@@ -306,6 +359,7 @@ def edit_badge(request, badge_id):
                                   'weight':b.weight,
                                   'points':b.points,
                                   'allow_send_obi':b.allow_send_obi,
+                                  'allow_issue_mutiple':b.allow_issue_mutiple,
                                   'gradelevels':b.get_gradelevel_list(),
                                    'id':b.id}) 
 
@@ -322,6 +376,30 @@ def delete_badge(request, badge_id):
 def copy_badge(request, badge_id):
     Badge.copy_badge(badge_id)
     return HttpResponseRedirect('/badges/') 
+
+
+def public_award_details(request, award_id):
+    
+    a = Award.objects.get(pk=award_id)
+    
+    b = Badge.objects.get(pk=a.badge_id)
+    badge_details = {'name':b.name,
+                      'identifier':b.identifier,
+                      'description':b.description,
+                      'criteria':b.criteria,
+                      'is_active':b.is_active,
+                      'years_valid':b.years_valid,
+                      'image_url':b.image_url(),
+                      'weight':b.weight,
+                      'points':b.points,
+                      'allow_send_obi':b.allow_send_obi,
+                      'gradelevels':b.get_gradelevel_list(),
+                      'issued_to':a.user.first_name+" "+a.user.last_name,
+                      'issued_on':a.date_created.strftime("%m-%d-%Y"),
+                       'id':b.id}
+    
+    return render(request,"publicAwardDetails.html", 
+                              {'badge_details':badge_details}) 
 
 def public_badge_details(request, badge_id):
     b = Badge.objects.get(pk=badge_id)
@@ -569,6 +647,68 @@ def badge_completion(request):
                                'selected_school_id':school_filter['selected_school_id'],
                                'badge_list':badge_list,
                                'student_list':student_list}) 
+    
+@login_required
+def badge_completion_download_all(request):
+    #Get available schools
+    school_filter = _setup_school_filter(request, with_all_types=True)
+
+    student_list = [] 
+    
+    badge_list = []
+    
+    #if school_filter['selected_school_id']:
+    for b in Badge.get_badges():
+        badge_list.append({'id':b.id,
+                           'name':b.name})
+        
+    default_awards = {}
+    for badge in badge_list:
+        default_awards[badge['id']] = " "
+        
+    
+    for school in school_filter['school_list']:
+ 
+        
+        org_students = Organization.get_students(school['id'])
+        student_id_list = []
+        
+        for user in org_students:
+            student_id_list.append(user.user_id)
+    
+        award_map = {}
+        for award in Award.objects.only('id','date_created','user__id','badge__id').filter(deleted=0,user__in=student_id_list):
+            if award.user_id not in award_map:
+                award_map[award.user_id] = default_awards.copy()
+       
+            award_map[award.user_id][award.badge_id] = award.date_created.strftime('%m/%d/%Y')
+        
+        for user in org_students:
+            student_profile = user
+            user = user.user
+            awards = default_awards
+            if user.id in award_map:
+                awards = award_map[user.id]
+    
+            gradelevel_name = ''
+            if student_profile.gradelevel:
+                gradelevel_name = student_profile.gradelevel.short_name()
+      
+            student_list.append({'id':student_profile.id,
+                                 'school':school['name'],
+                                 'name':user.get_full_name(),
+                                 'identifier':student_profile.identifier,
+                                 'gradelevel':gradelevel_name,
+                                 'email':user.email,
+                                 'award_map':awards})
+
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=BadgeCompletionReport.csv'
+    t = loader.get_template('reports/downloadBadgeCompletionReportTemplate.csv')
+    c = Context({'badge_list':(badge_list),'student_list':student_list})
+    response.write(t.render(c))
+    return response
+
    
 
 def _setup_student_filter(request):

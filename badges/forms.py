@@ -35,6 +35,25 @@ class PathwayForm(BootstrapForm):
             
         self.fields['organization'].choices =  schoolList
         
+class BadgeClaimForm(BootstrapForm):
+    code = forms.CharField(max_length=256, label='Claim Code')
+    
+    def clean(self):
+        
+        cleaned_data = super(BootstrapForm, self).clean()
+        code =  cleaned_data.get('code')
+
+        if Claim.objects.filter(code=code).count() == 0:
+            raise forms.ValidationError("Invalid claim code entered.")
+        
+        code = Claim.objects.get(code=code)
+        if(code.last_claimed_date):
+            raise forms.ValidationError("This claim code has already been claimed.")
+        
+        
+               
+        return cleaned_data
+        
 class BadgeForm(BootstrapForm):
     id = forms.CharField(required=False, widget=forms.HiddenInput)
     identifier = forms.CharField(max_length=256, label='Badge ID')
@@ -49,6 +68,7 @@ class BadgeForm(BootstrapForm):
     weight = forms.IntegerField(label='Badge Weighting', min_value=0)
     points = forms.IntegerField(label='Point Value', min_value=0, required=False)
     allow_send_obi = forms.BooleanField(label='Allow Sending to the Mozilla Badge Backpack', required=False)
+    allow_issue_mutiple = forms.BooleanField(label='Allow Badge to be Earned Multiple Times', required=False)
     
     gradelevels = forms.ModelMultipleChoiceField(queryset=GradeLevel.objects.filter(deleted=0).order_by('sort_order'), 
                                    label='Assigned Grade Level(s)',

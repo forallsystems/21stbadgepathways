@@ -4,6 +4,8 @@ from organizations.models import *
 from store.models import *
 from django.contrib.auth.models import User
 from django.core.cache import cache
+import string
+import random
 
 #A collection of badges
 class System(BaseModel):
@@ -25,6 +27,7 @@ class System(BaseModel):
         system.save()
         return system
     
+
 class Badge(BaseModel):
     system = models.ForeignKey(System)
     name =  models.TextField()
@@ -42,6 +45,8 @@ class Badge(BaseModel):
     weight = models.IntegerField(default=0)
     
     gradelevels = models.ManyToManyField(GradeLevel, blank=True, null=True, through="Badge_GradeLevel")
+    
+    allow_issue_mutiple = models.BooleanField(default=False)
     
     @staticmethod
     def get_badge_by_identifier(identifier):
@@ -79,7 +84,7 @@ class Badge(BaseModel):
             return Badge.objects.filter(deleted=0,is_active=1, created_by=user_id).exclude(identifier__exact='').order_by('name')
     
     @staticmethod
-    def create_badge(identifier,name,description,criteria,image,is_active,years_valid,weight,points,allow_send_obi,gradelevels,user_id):
+    def create_badge(identifier,name,description,criteria,image,is_active,years_valid,weight,points,allow_send_obi,allow_issue_mutiple,gradelevels,user_id):
          b = Badge(system=System.get_default_system(),
                    identifier=identifier,
                    name=name,
@@ -91,6 +96,7 @@ class Badge(BaseModel):
                    weight=weight,
                    points=points,
                    allow_send_obi=allow_send_obi,
+                   allow_issue_mutiple=allow_issue_mutiple,
                    created_by=user_id)
          b.save()
          
@@ -100,7 +106,7 @@ class Badge(BaseModel):
              
          return b
              
-    def update_badge(self,identifier,name,description,criteria,image,is_active,years_valid,weight,points,allow_send_obi,gradelevels):
+    def update_badge(self,identifier,name,description,criteria,image,is_active,years_valid,weight,points,allow_send_obi,allow_issue_mutiple,gradelevels):
         self.identifier = identifier
         self.name = name
         self.description = description
@@ -112,6 +118,7 @@ class Badge(BaseModel):
         self.weight = weight
         self.points = points
         self.allow_send_obi = allow_send_obi
+        self.allow_issue_mutiple = allow_issue_mutiple
         
         for g in Badge_GradeLevel.objects.filter(badge=self,deleted=0):
             g.deleted=1
@@ -205,6 +212,21 @@ class BulkIssueQueue(BaseModel):
     def schedule_bulk_import(file, email, org_id, user_id):
         bi = BulkIssueQueue(file=file,email=email,organization_id=org_id,created_by=user_id)
         bi.save()
+        
+class Claim(BaseModel):
+    badge = models.ForeignKey(Badge)
+    code =  models.CharField(max_length=256)
+    expiration_date = models.DateField(blank=True,null=True)
+    multiple_use = models.IntegerField(default=0)
+    last_claimed_date = models.DateField(blank=True,null=True)
+    
+    def __unicode__(self):
+        return self.badge.name
+    
+    @staticmethod
+    def _generateCode(size=6, chars=string.ascii_uppercase + string.digits):
+        return ''.join(random.choice(chars) for x in range(size))
+    
     
 class Award(BaseModel):
     badge = models.ForeignKey(Badge)
@@ -433,7 +455,7 @@ class Pathway(BaseModel):
             
         pb = self.get_pathway_badge()
             
-        pb.update_badge('',badge_name, badge_description, badge_criteria, badge_image, True, 99, 0, badge_points, False, [])
+        pb.update_badge('',badge_name, badge_description, badge_criteria, badge_image, True, 99, 0, badge_points, False,False, [])
         pb.save()
         self.save()
         
