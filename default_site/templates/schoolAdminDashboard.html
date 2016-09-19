@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}School Dashboard{%endblock%}
+{% block content %}
+
+
+<h2>School Dashboard</h2>
+
+<div class="row-fluid">
+  <div class="span6">
+ 
+  	<div class='menu title' {% if request.session.ORG_SETTINGS %}style="background-image:none;background:none;background-color:{{request.session.ORG_SETTINGS.login_text_background_color}};color:{{request.session.ORG_SETTINGS.login_text_color}};"{%endif%}>Activities</div>
+
+  	
+  	<a href="/badges/bulkissue/"><div class='menu'>Issue Badges <i class='icon icon-chevron-right'></i></div></a>
+  	<a href="/orders/"><div class='menu'>Process Orders <i class='icon icon-chevron-right'></i></div></a>
+  	
+  	<!--
+  	<a href="/reports/pathways/"><div class='menu'>Pathway Summary <i class='icon icon-chevron-right'></i></div></a>
+  	<a href="/reports/badges/"><div class='menu'>Badge Completion <i class='icon icon-chevron-right'></i></div></a>
+  	<a href="/reports/redemptions/"><div class='menu'>Point Redemptions <i class='icon icon-chevron-right'></i></div></a>
+  	-->
+  </div>
+
+  <div class="span6 alignLeft">
+
+    <div class='menu title' {% if request.session.ORG_SETTINGS %}style="background-image:none;background:none;background-color:{{request.session.ORG_SETTINGS.login_text_background_color}};color:{{request.session.ORG_SETTINGS.login_text_color}};"{%endif%}>Manage My School</div>
+    <a href="/badges/"><div class='menu'>Badges <i class='icon icon-chevron-right'></i></div></a>
+    <a href="/vendors/items/"><div class='menu'>Store Inventory <i class='icon icon-chevron-right'></i></div></a>
+    <a href="/students/"><div class='menu'>Student Accounts <i class='icon icon-chevron-right'></i></div></a>
+    {% if request.session.ENABLE_CUSTOM_LOGIN %}
+    <a href="/schools/settings/"><div class='menu'>Customize Site <i class='icon icon-chevron-right'></i></div></a>
+    {% endif %}    
+        
+        <!--
+  	<a href="/pathways/"><div class='menu'>Pathways <i class='icon icon-chevron-right'></i></div></a>
+	
+	
+	
+	<a href="/schools/"><div class='menu'>Schools <i class='icon icon-chevron-right'></i></div></a>
+	<a href="/districtadmins/"><div class='menu'>District Accounts <i class='icon icon-chevron-right'></i></div></a>
+	  -->
+  </div>
+
+</div>
+	
+	
+{% endblock %}

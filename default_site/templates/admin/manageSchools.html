@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Manage Schools{%endblock%}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> Manage Schools</li>
+{% endblock %}
+{% block content %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Manage Schools</h2>
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="button" onclick="javascript:document.location.href='/schools/add/'"><i class="icon-plus icon-white"></i> Add School</button>
+ 	
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Back</button>
+  </div>
+</div>
+
+<br/>
+
+<table class="table table-bordered table-striped" id="schoolsTable">
+<thead>
+	<tr>
+		<th>School Name</th>
+		<th width='80' style='text-align:center;'>ID</th>
+		<th width='120' style='text-align:center;'>Store Enabled</th>
+		<th width='120' style='text-align:center;'>Customize Site </th>
+		<th width='100'  style='text-align:center;'>Accounts</th>
+		<th style='text-align:center;' width='80'>Options</th>
+	</tr>
+</thead>
+<tbody>
+	{%for school in school_list %}
+	<tr>
+	<td> {{school.name}}</td>
+	<td style='text-align:center;'> {{school.organization_id}}</td>
+	<td style='text-align:center;'> {% if school.enable_store %}Yes{%else%}No{%endif%}</td>
+	<td style='text-align:center;'> {% if school.enable_custom_login %}Yes{%else%}No{%endif%}</td>
+	<td style='text-align:center;'><a href="/schooladmins/?school_id={{school.id}}" title="View Accounts"><span class="badge badge-info">{{school.total_accounts}}</span></a></td>
+	<td style='text-align:center;'>
+		<a href="/schools/edit/{{school.id}}/" title='Edit School Settings'><i class="icon-edit"></i></a>&nbsp;
+		
+	</td>
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+
+	
+<script language="JavaScript">
+
+	$('#schoolsTable').dataTable({
+		"bStateSave": true,
+       "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap"
+    } );
+    
+   
+
+
+</script>	
+	
+{% endblock %}

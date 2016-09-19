@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Customize Site{%endblock%}
+{% block breadcrumbs %}
+<li class='active'><span class="divider">/</span> Customize Landing Page</li>
+{% endblock %}
+{% block content %}
+
+<style>
+.row-fluid div.span6~div.span6 { text-align:left; }
+
+.control-label { font-weight:bold; }
+</style>
+
+<form action="" method="post" class="form-horizontal" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="row-fluid">
+  <div class="span6">
+  	<h2>Customize Site</h2>
+  </div>
+  <div class="span6" style="text-align:right;">
+  	<br/>
+  	<button class="btn btn-primary btn-large" type="submit" ><i class="icon-plus icon-white"></i> Save</button>
+ 	<a class="btn btn-secondary btn-large" type="button" href="/{{login_url}}/?preview=1" target="_blank"><i class="icon-search icon-white"></i> Preview</a>
+
+ 	<button class="btn btn-inverse btn-large" type="button" onclick="javascript:document.location.href='/dashboard/'"><i class="icon-chevron-left icon-white"></i> Done</button>
+ 	
+  </div>
+</div>
+
+{{ form }}
+<br/>
+<div class="row-fluid">
+  <div class="span6" id="col1">
+  </div>
+  <div class="span6" id="col2">
+  </div>
+</div>
+
+<h4 id="site">Site:</h4>
+<h4 id="login">Login Page:</h4>
+
+{% if primary_logo_url %}
+<img src="{{primary_logo_url}}" id="saved_logo" style="width:200px;margin-left:180px;"/>
+{% else %}
+<img src="{{ STATIC_URL }}images/p2s-logo.png" id="saved_logo" style="width:200px;margin-left:180px;"/>
+{% endif %}
+
+
+</form>
+
+<script language="JavaScript">
+
+$('#div_id_login_url').appendTo('#col1');
+$('#saved_logo').appendTo('#col1');
+$('#div_id_primary_logo').appendTo('#col1');
+$('#div_id_login_text').appendTo('#col1');
+
+$('#site').appendTo('#col2');
+$('#div_id_header_color').appendTo('#col2');
+$('#div_id_background_color').appendTo('#col2');
+$('#div_id_text_color').appendTo('#col2');
+$('#login').appendTo('#col2');
+$('#div_id_login_text_background_color').appendTo('#col2');
+$('#div_id_login_text_color').appendTo('#col2');
+
+
+$('#id_header_color').colorpicker({'format':'hex'});
+$('#id_background_color').colorpicker({'format':'hex'});
+$('#id_text_color').colorpicker({'format':'hex'});
+$('#id_login_text_background_color').colorpicker({'format':'hex'});
+$('#id_login_text_color').colorpicker({'format':'hex'});
+
+$('#id_login_url').after('<div style="padding-top:5px;">cnusdp2s.com/{{login_url}}/</div>');
+$('#id_login_url').hide();
+
+</script>
+	
+{% endblock %}
