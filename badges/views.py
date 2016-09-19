@@ -3,13 +3,42 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.db.models import Count
+from django.db.models import Count, Sum
 from users.models import *
 from organizations.models import *
 from badges.models import *
 from badges.forms import *
 from django.template import loader, Context
 from datetime import datetime
+
+@login_required
+def leaderboard(request):
+    
+    userDataSet = []
+    #Top 10 Users
+    for u in User.objects.annotate(num_awards=Count('award'), num_points=Sum('award__points')).order_by('-num_points')[:10]:
+        org = Organization.get_user_organization(u.id)
+        
+        if org:
+            userDataSet.append({'name':u.first_name+" "+u.last_name,
+                            'num_awards':u.num_awards,
+                            'num_points':u.num_points,
+                            'school':org.name})
+    
+    
+    
+    orgDataSet = []
+    #Top 5 Schools
+    for o in Organization.objects.annotate(num_awards=Count('organization_user__user__award'), num_points=Sum('organization_user__user__award__points')).order_by('-num_points')[:5]:
+        
+        orgDataSet.append({'name':o.name,
+                           'num_awards':o.num_awards,
+                           'num_points':o.num_points})
+   # pubs = Publisher.objects.annotate(num_books=Count('book')).order_by('-num_books')[:5]
+   
+    return render(request,"leaderboard.html", 
+                              {'userDataSet':userDataSet,
+                               'orgDataSet':orgDataSet}) 
 
 @login_required
 def list_pathways(request):
