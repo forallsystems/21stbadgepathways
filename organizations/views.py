@@ -10,6 +10,86 @@ from organizations.models import *
 from organizations.forms import *
 from social.apps.django_app.default.models import *
 
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import views as django_auth_views
+from common.forms import *
+from datetime import datetime
+
+def custom_logout(request):
+    
+    redirect_to = "/"
+    
+    if 'ORG_SETTINGS' in request.session and request.session['ORG_SETTINGS']:
+        redirect_to = "/"+request.session['ORG_SETTINGS'].login_url+"/"
+        
+    django_auth_views.logout(request)
+    
+    print redirect_to
+         
+    return HttpResponseRedirect(redirect_to)      
+    
+
+def custom_login(request, url="", template_name='login.html',
+                 redirect_field_name=REDIRECT_FIELD_NAME,
+                 authentication_form=CustomAuthenticationForm):
+    
+    is_preview = request.REQUEST.get('preview', 0)
+
+    
+    if request.user.is_authenticated() and not is_preview:
+       return HttpResponseRedirect("/dashboard/")
+   
+    #verify url    
+    settings = None
+    if url:
+        for os in  Organization_Settings.objects.filter(deleted=0, login_url=url):
+            settings = os
+    
+    
+    if  settings:
+        request.session['ORG_SETTINGS'] = settings
+        request.session['USER_ORGANIZATION_NAME'] = settings.organization.name
+    
+    
+    
+    """Displays the login form and handles the login action."""
+    redirect_to = request.REQUEST.get(redirect_field_name, '')
+
+    if request.method == "POST":
+        form = authentication_form(data=request.POST)
+        if form.is_valid():
+            # Light security check -- make sure redirect_to isn't garbage.
+            if not redirect_to or ' ' in redirect_to:
+                redirect_to = settings.LOGIN_REDIRECT_URL
+
+            # Heavier security check -- redirects to http://example.com should
+            # not be allowed, but things like /view/?param=http://example.com
+            # should be allowed. This regex checks if there is a '//' *before* a
+            # question mark.
+            elif '//' in redirect_to and re.match(r'[^\?]*//', redirect_to):
+                    redirect_to = settings.LOGIN_REDIRECT_URL
+
+            # Okay, security checks complete. Log the user in.
+            django_auth_views.auth_login(request, form.get_user())
+
+            if request.session.test_cookie_worked():
+                request.session.delete_test_cookie()
+                
+            log = LogInHistory(user=form.get_user(), date=datetime.now(), ip=request.META['REMOTE_ADDR'])
+            log.save()
+
+            return HttpResponseRedirect(redirect_to)
+
+    else:
+        form = authentication_form(request)
+
+    request.session.set_test_cookie()
+
+    return render_to_response(template_name, {
+        'form': form,
+        redirect_field_name: redirect_to,
+    }, context_instance=RequestContext(request))
 
 @login_required
 def list_schools(request):
@@ -21,6 +101,7 @@ def list_schools(request):
         school_list.append({'id':obj.id,
                             'name':obj.__unicode__(),
                             'enable_store':obj.enable_store,
+                            'enable_custom_login':obj.enable_custom_login,
                             'organization_id':obj.organization_id,
                             'total_accounts':len(Organization.get_schooladmins(obj.id))})
                               
@@ -40,6 +121,7 @@ def add_school(request):
                                              Organization.TYPE_SCHOOL, 
                                              '',
                                              form.cleaned_data['enable_store'],
+                                             form.cleaned_data['enable_custom_login'],
                                              form.cleaned_data['organization_id'])
             
             return HttpResponseRedirect('/schools/')
@@ -54,6 +136,8 @@ def add_school(request):
 def edit_school(request, school_id):
     
     org = Organization.objects.get(pk=school_id)
+    settings = org.init_settings()
+    
     if request.method == 'POST': 
         form = SchoolForm(request.POST)
             
@@ -61,20 +145,77 @@ def edit_school(request, school_id):
            
             org.update_organization(form.cleaned_data['name'],
                                     form.cleaned_data['organization_id'],
-                                    form.cleaned_data['enable_store'])
+                                    form.cleaned_data['enable_store'],
+                                    form.cleaned_data['enable_custom_login'])
             org.save()
+            
+            settings.login_url = form.cleaned_data['login_url']
+            settings.save()
             
             return HttpResponseRedirect('/schools/')
     else:
         
+        
+        
         form = SchoolForm(initial={'name':org.name,
                                   'enable_store':org.enable_store,
+                                  'enable_custom_login':org.enable_custom_login,
                                   'organization_id':org.organization_id,
+                                  'login_url':settings.login_url,
                                    'id':org.id}) 
 
     return render(request,'admin/addEditSchool.html', {
         'form': form,
     }) 
+    
+@login_required
+def edit_settings(request):
+    if(request.session['USER_ORGANIZATION_TYPE'] == Organization.TYPE_SCHOOL):
+        org = Organization.objects.get(pk=request.session['USER_ORGANIZATION_ID'])
+        settings = org.init_settings()
+        
+        if request.method == 'POST': 
+            form = SchoolSettingsForm(request.POST)
+                
+            if form.is_valid(): 
+                primary_logo = None
+                if 'primary_logo' in request.FILES:
+                    primary_logo = request.FILES['primary_logo']
+                
+                org.update_settings(form.cleaned_data['login_url'],
+                                   primary_logo,
+                                   form.cleaned_data['login_text'],
+                                   form.cleaned_data['login_text_background_color'],
+                                   form.cleaned_data['login_text_color'],
+                                   form.cleaned_data['header_color'],
+                                   form.cleaned_data['background_color'],
+                                   form.cleaned_data['text_color'])
+                settings = org.init_settings()
+                request.session['ORG_SETTINGS'] = settings
+             
+        else:
+            
+            form = SchoolSettingsForm(initial={
+                                           'id':settings.id,
+                                          'login_url':settings.login_url,
+                                          'primary_logo':settings.primary_logo,
+                                          'login_text':settings.login_text if settings.login_text else "Welcome to CNUSD's Passport to Success eBadge website. Students, enter your username and password below to login and begin your journey through digital badges!",
+                                          'login_text_background_color':settings.login_text_background_color,
+                                          'login_text_color':settings.login_text_color,
+                                          'header_color':settings.header_color,
+                                          'background_color':settings.background_color,
+                                          'text_color':settings.text_color
+                                       }) 
+    
+        return render(request,'admin/editSchoolSettings.html', {
+            'form': form,
+            'login_url':settings.login_url,
+            'primary_logo_url':settings.primary_logo.url if settings.primary_logo else ''
+        }) 
+        
+    else:
+        return HttpResponseRedirect('/dashboard/')
+    
     
 
 def _setup_school_filter(request):
